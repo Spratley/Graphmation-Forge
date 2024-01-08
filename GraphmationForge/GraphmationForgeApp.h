@@ -18,6 +18,7 @@ public:
     Point const GetScreenDimensions(HWND const& hWnd) const;
 
     Node temp_node;
+    bool temp_selected = false;
 
 private:
     GraphDrawer m_graphDrawer;

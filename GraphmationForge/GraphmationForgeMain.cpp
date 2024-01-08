@@ -178,6 +178,18 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         RECT clientRect;
         GetClientRect(hWnd, &clientRect);
         EnumChildWindows(hWnd, EnumChildProc, (LPARAM)&clientRect);
+        break; 
+    case WM_KEYDOWN:
+        if (wParam == VK_SPACE)
+        {
+            app.temp_selected = true;
+        }
+        break;
+    case WM_KEYUP:
+        if (wParam == VK_SPACE)
+        {
+            app.temp_selected = false;
+        }
         break;
     default:
         return DefWindowProc(hWnd, message, wParam, lParam);

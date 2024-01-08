@@ -4,6 +4,8 @@
 
 class GraphmationForgeApp;
 
+struct Node;
+
 class GraphDrawer
 {
 public:
@@ -14,7 +16,10 @@ public:
 private:
     void DrawBackground(Graphics& graphics, HWND const& hWnd);
 
-    void DrawRoundedRect(Graphics& graphics, Rect const& rect, float const cornerRadius);
+    void DrawRoundedRect(Graphics& graphics, Rect const& rect, float const cornerRadius, bool isSelected);
+    void DrawArrow(Graphics& graphics, Point const& start, Point const& end, bool const isSelected);
+
+    void DrawNode(Graphics& graphics, Node const& node);
 
 private:
     GraphmationForgeApp& m_owner;

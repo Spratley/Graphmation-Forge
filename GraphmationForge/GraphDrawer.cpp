@@ -1,11 +1,13 @@
 #include "GraphDrawer.h"
 
 #include "GraphmationForgeApp.h"
+#include "Node.h"
 
 #define GF_BG_LIGHT Color(52, 73, 94)
 #define GF_BG_DARK Color(44, 62, 80)
 
 #define GF_LIGHT_GREY Color(236, 240, 241)
+
 #define GF_LIGHT_TURQUOISE Color(26, 188, 156)
 #define GF_DARK_TURQUOISE Color(22, 160, 133)
 
@@ -26,15 +28,11 @@ void GraphDrawer::Draw(HDC & hdc, HWND const& hWnd)
 
     DrawBackground(graphics, hWnd);
 
-    Point nodePos = m_owner.temp_node.m_position;
-    NODE_SIZE;
-    Rect nodeRect(nodePos, nodeSize);
-    DrawRoundedRect(graphics, nodeRect, 25.0f);
+    Point start(10, 20);
+    Point end(60, 80);
+    DrawArrow(graphics, start, end, m_owner.temp_selected);
 
-    Pen pen(GF_LIGHT_GREY, 10.0f);
-    pen.SetStartCap(LineCap::LineCapDiamondAnchor);
-    pen.SetEndCap(LineCap::LineCapArrowAnchor);
-    graphics.DrawLine(&pen, Point(20, 10), Point(70, 50));
+    DrawNode(graphics, m_owner.temp_node);
 }
 
 void GraphDrawer::DrawBackground(Graphics & graphics, HWND const & hWnd)
@@ -47,7 +45,7 @@ void GraphDrawer::DrawBackground(Graphics & graphics, HWND const & hWnd)
     graphics.FillRectangle(&gradientBrush, screenRect);
 }
 
-void GraphDrawer::DrawRoundedRect(Graphics& graphics, Rect const & rect, float const cornerRadius)
+void GraphDrawer::DrawRoundedRect(Graphics& graphics, Rect const & rect, float const cornerRadius, bool isSelected)
 {
     Point gradientTop;
     Point gradientBottom;
@@ -85,7 +83,32 @@ void GraphDrawer::DrawRoundedRect(Graphics& graphics, Rect const & rect, float c
     outline.AddArc(cornerBL, 90, 90);
     outline.AddArc(cornerTL, 180, 1); // Close path
 
-
-    Pen outlinePen(GF_LIGHT_GREY, 4.0f);
+    Color c = isSelected ? GF_DARK_ORANGE : GF_LIGHT_GREY;
+    Pen outlinePen(c, 4.0f);
     graphics.DrawPath(&outlinePen, &outline);
+}
+
+void GraphDrawer::DrawArrow(Graphics& graphics, Point const & start, Point const & end, bool const isSelected)
+{
+    Color primary = isSelected ? GF_DARK_ORANGE : GF_LIGHT_GREY;
+    Color secondary = isSelected ? GF_LIGHT_GREY : GF_DARK_ORANGE;
+
+    Pen primaryPen(primary, 14.0f);
+    Pen secondaryPen(secondary, 8.0f);
+    secondaryPen.SetEndCap(LineCap::LineCapArrowAnchor);
+
+    Point arrow = end - start;
+    Point middleStart(arrow.X * 0.3333f, arrow.Y * 0.3333f);
+    Point middleEnd(arrow.X * 0.6666f, arrow.Y * 0.6666f);
+
+    graphics.DrawLine(&primaryPen, start, end);
+    graphics.DrawLine(&secondaryPen, middleStart + start, middleEnd + start);
+}
+
+void GraphDrawer::DrawNode(Graphics & graphics, Node const & node)
+{
+    Point nodePos = node.m_position;
+    NODE_SIZE;
+    Rect nodeRect(nodePos, nodeSize);
+    DrawRoundedRect(graphics, nodeRect, 25.0f, node.m_isSelected);
 }
