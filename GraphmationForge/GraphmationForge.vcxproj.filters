@@ -45,6 +45,9 @@
     <ClInclude Include="Node.h">
       <Filter>Header Files\Application</Filter>
     </ClInclude>
+    <ClInclude Include="GraphmationDefines.h">
+      <Filter>Header Files\Application</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="GraphmationForge.rc">

@@ -9,11 +9,12 @@
 #define IDM_ABOUT                       104
 #define IDC_GRAPHMATION_CHILD           104
 #define IDM_EXIT                        105
-#define IDC_C_GRAPHAREA                 105
-#define IDC_C_PROPERTIES                106
 #define IDI_GRAPHMATIONFORGE            107
+#define ID_CLASS_GRAPH_AREA             107
 #define IDI_SMALL                       108
+#define ID_CLASS_NODE                   108
 #define IDC_GRAPHMATIONFORGE            109
+#define ID_CLASS_PROPERTIES_PANEL       110
 #define IDR_MAINFRAME                   128
 #define ID_FILE_BRUH                    32771
 #define IDM_BRUH                        32772

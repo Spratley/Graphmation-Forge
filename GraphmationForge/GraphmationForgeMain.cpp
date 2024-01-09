@@ -1,7 +1,6 @@
 // Entry point for application
 
 #include "GraphmationForgeApp.h"
-#include <iostream>
 
 #define MAX_LOADSTRING 100
 
@@ -9,14 +8,19 @@
 HINSTANCE hInst;                                // Current instance
 WCHAR szTitle[MAX_LOADSTRING];                  // The title bar text
 WCHAR szWindowClass[MAX_LOADSTRING];            // Main window class name
-ULONG_PTR gdiplusToken;                         // Pointer to the GDIPlus instance
-GraphmationForgeApp app;
+WCHAR szGraphAreaClass[MAX_LOADSTRING];         // Graph area window class name
+WCHAR szNodeClass[MAX_LOADSTRING];              // Node window class name
+WCHAR szPropertiesPanelClass[MAX_LOADSTRING];   // Properties panel window class name
 
-HWND hWndGraphArea;
-HWND hWndPropertiesWindow;
+// ULONG_PTR gdiplusToken;                         // Pointer to the GDIPlus instance
+// GraphmationForgeApp app;
+
+
+HFONT hFont;
+
 
 // Forward declarations of functions included in this code module:
-ATOM                RegisterWindowClass(HINSTANCE hInstance, LPCWSTR className);
+ATOM                RegisterWindowClass(HINSTANCE hInstance, LPCWSTR className, HBRUSH brush);
 BOOL                InitInstance(HINSTANCE, int);
 LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK    About(HWND, UINT, WPARAM, LPARAM);
@@ -31,8 +35,15 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
     LoadStringW(hInstance, IDS_APP_TITLE, szTitle, MAX_LOADSTRING);
     LoadStringW(hInstance, IDC_GRAPHMATIONFORGE, szWindowClass, MAX_LOADSTRING);
+    LoadStringW(hInstance, ID_CLASS_NODE, szNodeClass, MAX_LOADSTRING);
 
-    RegisterWindowClass(hInstance, szWindowClass);
+    HBRUSH brushBackground = CreateSolidBrush(COLOR_BG);
+    HBRUSH brushNode = CreateSolidBrush(COLOR_NODE);
+
+    RegisterWindowClass(hInstance, szWindowClass, brushBackground);
+    RegisterWindowClass(hInstance, szNodeClass, brushNode);
+
+    hFont = CreateFont(25, 0, 0, 0, FW_BOLD, FALSE, FALSE, FALSE, ANSI_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH | FF_SWISS, L"Segoe UI");
 
     if (!InitInstance (hInstance, nCmdShow))
     {
@@ -51,20 +62,20 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
             DispatchMessage(&msg);
         }
 
-        app.Update(msg.hwnd);
+        // app.Update(msg.hwnd);
     }
 
-    GdiplusShutdown(gdiplusToken);
+    // GdiplusShutdown(gdiplusToken);
 
     return (int) msg.wParam;
 }
 
-ATOM RegisterWindowClass(HINSTANCE hInstance, LPCWSTR className)
+ATOM RegisterWindowClass(HINSTANCE hInstance, LPCWSTR className, HBRUSH brush)
 {
     WNDCLASSEXW wcex;
 
     wcex.cbSize = sizeof(WNDCLASSEX);
-
+    
     wcex.style          = CS_HREDRAW | CS_VREDRAW;
     wcex.lpfnWndProc    = WndProc;
     wcex.cbClsExtra     = 0;
@@ -72,7 +83,7 @@ ATOM RegisterWindowClass(HINSTANCE hInstance, LPCWSTR className)
     wcex.hInstance      = hInstance;
     wcex.hIcon          = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_GRAPHMATIONFORGE));
     wcex.hCursor        = LoadCursor(nullptr, IDC_ARROW);
-    wcex.hbrBackground  = (HBRUSH)(COLOR_WINDOW+1);
+    wcex.hbrBackground  = brush;// (HBRUSH)(COLOR_WINDOW+1);
     wcex.lpszMenuName   = MAKEINTRESOURCEW(IDC_GRAPHMATIONFORGE);
     wcex.lpszClassName  = className;
     wcex.hIconSm        = LoadIcon(wcex.hInstance, MAKEINTRESOURCE(IDI_SMALL));
@@ -92,8 +103,8 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
       return FALSE;
    }
 
-   GdiplusStartupInput gdiplusStartupInput;
-   GdiplusStartup(&gdiplusToken, &gdiplusStartupInput, NULL);
+   // GdiplusStartupInput gdiplusStartupInput;
+   // GdiplusStartup(&gdiplusToken, &gdiplusStartupInput, NULL);
 
    ShowWindow(hWnd, nCmdShow);
    UpdateWindow(hWnd);
@@ -108,21 +119,21 @@ BOOL CALLBACK EnumChildProc(HWND hWndChild, LPARAM lParam)
     
     idChild = GetWindowLong(hWndChild, GWL_ID);
 
-    if (idChild == IDC_C_PROPERTIES || idChild == IDC_C_GRAPHAREA)
-    {
-        rcParent = (LPRECT)lParam;
-        int width = rcParent->right - rcParent->left;
-        int height = rcParent->bottom - rcParent->top;
-
-        if (idChild == IDC_C_PROPERTIES)
-        {
-            MoveWindow(hWndChild, (width / 4) * 3, 0, width / 4, height, TRUE);
-        }
-        else if (idChild == IDC_C_GRAPHAREA)
-        {
-            MoveWindow(hWndChild, 0, 0, width / 4 * 3, height, TRUE);
-        }
-    }
+    // if (idChild == IDC_C_PROPERTIES || idChild == IDC_C_GRAPHAREA)
+    // {
+    //     rcParent = (LPRECT)lParam;
+    //     int width = rcParent->right - rcParent->left;
+    //     int height = rcParent->bottom - rcParent->top;
+    // 
+    //     if (idChild == IDC_C_PROPERTIES)
+    //     {
+    //         MoveWindow(hWndChild, (width / 4) * 3, 0, width / 4, height, TRUE);
+    //     }
+    //     else if (idChild == IDC_C_GRAPHAREA)
+    //     {
+    //         MoveWindow(hWndChild, 0, 0, width / 4 * 3, height, TRUE);
+    //     }
+    // }
 
     ShowWindow(hWndChild, SW_SHOW);
 
@@ -131,16 +142,28 @@ BOOL CALLBACK EnumChildProc(HWND hWndChild, LPARAM lParam)
 
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
-    // HWND hWndLabel;
-    int idChild;
+    HWND hWndLabel; 
+    HWND hWndnodeLabel;
+    HRGN region;
+
+    int id;
 
     switch (message)
     {
     case WM_CREATE:
         
-        hWndGraphArea = CreateWindow(L"static", L"GraphArea", WS_CHILD | WS_BORDER | WS_VISIBLE, 0, 0, 0, 0, hWnd, (HMENU)IDC_C_GRAPHAREA, NULL, NULL);
-        hWndPropertiesWindow = CreateWindow(L"static", L"Properties", WS_CHILD | WS_BORDER | WS_VISIBLE, 0, 0, 0, 0, hWnd, (HMENU)IDC_C_PROPERTIES, NULL, NULL);
-        
+        id = GetWindowLong(hWnd, GWL_ID);
+        if (id != 169)
+        {
+            hWndLabel = CreateWindow(szNodeClass, L"TestNode", WS_CHILD | WS_VISIBLE, 10, 10, 150, 50, hWnd, (HMENU)(169), NULL, NULL);
+            region = CreateRoundRectRgn(0, 0, 150, 50, 20, 20);
+            SetWindowRgn(hWndLabel, region, true);
+
+            hWndnodeLabel = CreateWindow(szNodeClass, L"TestNode2", WS_CHILD | WS_VISIBLE, 460, 302, 150, 50, hWnd, (HMENU)(169), NULL, NULL);
+            region = CreateRoundRectRgn(0, 0, 150, 50, 20, 20);
+            SetWindowRgn(hWndnodeLabel, region, true);
+        }
+
         break;
     case WM_COMMAND:
         {
@@ -163,12 +186,22 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         {
             PAINTSTRUCT ps;
             HDC hdc = BeginPaint(hWnd, &ps);
-            EndPaint(hWnd, &ps);
 
-            // Draw graph area
-            hdc = BeginPaint(hWndGraphArea, &ps);
-            app.Draw(hdc, hWndGraphArea);
-            EndPaint(hWndGraphArea, &ps);
+            id = GetWindowLong(hWnd, GWL_ID);
+            if (id == 169)
+            {
+                RECT textArea;
+                textArea.left = 0;
+                textArea.top = 0;
+                textArea.right = 150;
+                textArea.bottom = 50;
+                SetBkMode(hdc, TRANSPARENT);
+                SetTextColor(hdc, COLOR_FONT);
+                SelectObject(hdc, hFont);
+                DrawText(hdc, L"Bonk Text", 9, &textArea, DT_CENTER | DT_SINGLELINE | DT_VCENTER);
+            }
+
+            EndPaint(hWnd, &ps);
         }
         break;
     case WM_DESTROY:
@@ -180,16 +213,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         EnumChildWindows(hWnd, EnumChildProc, (LPARAM)&clientRect);
         break; 
     case WM_KEYDOWN:
-        if (wParam == VK_SPACE)
-        {
-            app.temp_selected = true;
-        }
         break;
     case WM_KEYUP:
-        if (wParam == VK_SPACE)
-        {
-            app.temp_selected = false;
-        }
         break;
     default:
         return DefWindowProc(hWnd, message, wParam, lParam);

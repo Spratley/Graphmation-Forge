@@ -153,6 +153,7 @@
   <ItemGroup>
     <ClInclude Include="framework.h" />
     <ClInclude Include="GraphDrawer.h" />
+    <ClInclude Include="GraphmationDefines.h" />
     <ClInclude Include="GraphmationForgeApp.h" />
     <ClInclude Include="GraphmationForge.h" />
     <ClInclude Include="Node.h" />
