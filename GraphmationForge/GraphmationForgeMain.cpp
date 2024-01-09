@@ -2,22 +2,15 @@
 
 #include "GraphmationForgeApp.h"
 
-#define MAX_LOADSTRING 100
 
 // Global Variables:
 HINSTANCE hInst;                                // Current instance
-WCHAR szTitle[MAX_LOADSTRING];                  // The title bar text
-WCHAR szWindowClass[MAX_LOADSTRING];            // Main window class name
 WCHAR szGraphAreaClass[MAX_LOADSTRING];         // Graph area window class name
-WCHAR szNodeClass[MAX_LOADSTRING];              // Node window class name
 WCHAR szPropertiesPanelClass[MAX_LOADSTRING];   // Properties panel window class name
 
-// ULONG_PTR gdiplusToken;                         // Pointer to the GDIPlus instance
-// GraphmationForgeApp app;
-
+GraphmationForgeApp app;
 
 HFONT hFont;
-
 
 // Forward declarations of functions included in this code module:
 ATOM                RegisterWindowClass(HINSTANCE hInstance, LPCWSTR className, HBRUSH brush);
@@ -33,15 +26,16 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     UNREFERENCED_PARAMETER(hPrevInstance);
     UNREFERENCED_PARAMETER(lpCmdLine);
 
-    LoadStringW(hInstance, IDS_APP_TITLE, szTitle, MAX_LOADSTRING);
-    LoadStringW(hInstance, IDC_GRAPHMATIONFORGE, szWindowClass, MAX_LOADSTRING);
-    LoadStringW(hInstance, ID_CLASS_NODE, szNodeClass, MAX_LOADSTRING);
+    app.SetInstanceHandle(hInstance);
+    app.LoadStringResources();
+    app.CreateBrushPalette();
+    app.RegisterWindowClasses();
 
-    HBRUSH brushBackground = CreateSolidBrush(COLOR_BG);
-    HBRUSH brushNode = CreateSolidBrush(COLOR_NODE);
-
-    RegisterWindowClass(hInstance, szWindowClass, brushBackground);
-    RegisterWindowClass(hInstance, szNodeClass, brushNode);
+    // HBRUSH brushBackground = CreateSolidBrush(COLOR_BG);
+    // HBRUSH brushNode = CreateSolidBrush(COLOR_NODE);
+    // 
+    // RegisterWindowClass(hInstance, szWindowClass, brushBackground);
+    // RegisterWindowClass(hInstance, szNodeClass, brushNode);
 
     hFont = CreateFont(25, 0, 0, 0, FW_BOLD, FALSE, FALSE, FALSE, ANSI_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH | FF_SWISS, L"Segoe UI");
 

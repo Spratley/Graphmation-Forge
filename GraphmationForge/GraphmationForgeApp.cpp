@@ -1,3 +1,4 @@
+#include "GraphmationForgeApp.h"
 //#include "GraphmationForgeApp.h"
 //
 //GraphmationForgeApp::GraphmationForgeApp()
@@ -34,3 +35,93 @@
 //    }
 //    return result;
 //}
+
+// Global callback for Win32
+LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+{
+    GraphmationForgeApp* instance = GraphmationForgeApp::GetInstance();
+    int retValue = -1;
+    switch (message)
+    {
+    case WM_CREATE:
+        retValue = instance->OnWindowCreated(hWnd, message, wParam, lParam);
+        break;
+    case WM_PAINT:
+        retValue = instance->OnWindowCreated(hWnd, message, wParam, lParam);
+        break;
+    case WM_DESTROY:
+        PostQuitMessage(0);
+        return 0;
+    }
+
+    if (retValue == -1)
+    {
+        // Window refused to process command, fallback to default behavior
+        return DefWindowProc(hWnd, message, wParam, lParam);
+    }
+    return 0;
+}
+
+GraphmationForgeApp::GraphmationForgeApp()
+{
+    // Don't care about multiple instances because if there is then you already messed up
+    s_instance = this;
+}
+
+ATOM GraphmationForgeApp::RegisterWindowClass(LPCWSTR className, HBRUSH backgroundBrush)
+{
+    WNDCLASSEXW wcex;
+
+    wcex.cbSize = sizeof(WNDCLASSEX);
+
+    wcex.style = CS_HREDRAW | CS_VREDRAW;
+    wcex.lpfnWndProc = WndProc;
+    wcex.cbClsExtra = 0;
+    wcex.cbWndExtra = 0;
+    wcex.hInstance = m_instanceHandle;
+    wcex.hIcon = LoadIcon(m_instanceHandle, MAKEINTRESOURCE(IDI_GRAPHMATIONFORGE));
+    wcex.hCursor = LoadCursor(nullptr, IDC_ARROW);
+    wcex.hbrBackground = backgroundBrush;
+    wcex.lpszMenuName = MAKEINTRESOURCEW(IDC_GRAPHMATIONFORGE);
+    wcex.lpszClassName = className;
+    wcex.hIconSm = LoadIcon(wcex.hInstance, MAKEINTRESOURCE(IDI_SMALL));
+
+    return RegisterClassExW(&wcex);
+}
+
+void GraphmationForgeApp::LoadStringResources()
+{
+    LoadStringResource(IDS_APP_TITLE);
+    LoadStringResource(IDC_GRAPHMATIONFORGE);
+    LoadStringResource(ID_CLASS_NODE);
+}
+
+void GraphmationForgeApp::CreateBrushPalette()
+{
+    m_brushes.resize(ID_COLOR_COUNT);
+
+    CreateBrush(ID_COLOR_BG, COLOR_BG);
+    CreateBrush(ID_COLOR_NODE, COLOR_NODE);
+    CreateBrush(ID_COLOR_FONT, COLOR_FONT);
+}
+
+void GraphmationForgeApp::RegisterWindowClasses()
+{
+    RegisterWindowClass(m_stringResources[IDC_GRAPHMATIONFORGE], m_brushes[ID_COLOR_BG]); // Main window
+    RegisterWindowClass(m_stringResources[ID_CLASS_NODE], m_brushes[ID_COLOR_NODE]);
+}
+
+Node* const GraphmationForgeApp::CreateNode()
+{
+    return nullptr;
+}
+
+void GraphmationForgeApp::LoadStringResource(int resourceID)
+{
+    LoadStringW(m_instanceHandle, resourceID, m_stringResources[resourceID], MAX_LOADSTRING);
+}
+
+void GraphmationForgeApp::CreateBrush(int brushID, COLORREF brushColor)
+{
+    m_brushes[brushID] = CreateSolidBrush(brushColor);
+}

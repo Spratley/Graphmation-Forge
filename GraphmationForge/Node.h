@@ -22,11 +22,12 @@
 //};
 
 #include "framework.h"
+#include <string>
 
 struct Node
 {
 public:
-    void SetPosition(POINT p);
+    void SetPosition(HWND& parentWindowHandle, POINT const& p);
     void InvalidateNodeArea(HWND& parentWindowHandle);
 
     bool IsMouseOverlapping(POINT mousePos);
@@ -35,4 +36,8 @@ public:
 
 private:
     HWND m_windowHandle;
+
+    POINT m_position;
+    std::string m_nodeName;
+    std::string m_associatedAnimation;
 };
