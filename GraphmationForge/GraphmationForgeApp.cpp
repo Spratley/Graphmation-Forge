@@ -36,6 +36,8 @@
 //    return result;
 //}
 
+GraphmationForgeApp* GraphmationForgeApp::s_instance;
+
 // Global callback for Win32
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
@@ -68,6 +70,16 @@ GraphmationForgeApp::GraphmationForgeApp()
     s_instance = this;
 }
 
+int GraphmationForgeApp::OnWindowCreated(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+{
+    return 0;
+}
+
+int GraphmationForgeApp::OnWindowPaint(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+{
+    return 0;
+}
+
 ATOM GraphmationForgeApp::RegisterWindowClass(LPCWSTR className, HBRUSH backgroundBrush)
 {
     WNDCLASSEXW wcex;
@@ -89,6 +101,22 @@ ATOM GraphmationForgeApp::RegisterWindowClass(LPCWSTR className, HBRUSH backgrou
     return RegisterClassExW(&wcex);
 }
 
+bool GraphmationForgeApp::InitInstance(int cmdShow)
+{
+    HWND hWnd = CreateWindowW(m_stringResources[IDC_GRAPHMATIONFORGE], m_stringResources[IDS_APP_TITLE], WS_OVERLAPPEDWINDOW,
+        CW_USEDEFAULT, 0, CW_USEDEFAULT, 0, nullptr, nullptr, m_instanceHandle, nullptr);
+
+    if (!hWnd)
+    {
+        return FALSE;
+    }
+
+    ShowWindow(hWnd, cmdShow);
+    UpdateWindow(hWnd);
+
+    return TRUE;
+}
+
 void GraphmationForgeApp::LoadStringResources()
 {
     LoadStringResource(IDS_APP_TITLE);
@@ -103,6 +131,11 @@ void GraphmationForgeApp::CreateBrushPalette()
     CreateBrush(ID_COLOR_BG, COLOR_BG);
     CreateBrush(ID_COLOR_NODE, COLOR_NODE);
     CreateBrush(ID_COLOR_FONT, COLOR_FONT);
+}
+
+void GraphmationForgeApp::CreateFonts()
+{
+    CreateWindowFont(L"Segoe UI", 25, FW_BOLD); // 0
 }
 
 void GraphmationForgeApp::RegisterWindowClasses()
@@ -124,4 +157,9 @@ void GraphmationForgeApp::LoadStringResource(int resourceID)
 void GraphmationForgeApp::CreateBrush(int brushID, COLORREF brushColor)
 {
     m_brushes[brushID] = CreateSolidBrush(brushColor);
+}
+
+void GraphmationForgeApp::CreateWindowFont(const wchar_t* fontName, int const fontSize, int const fontWeight)
+{
+    m_fonts.push_back(CreateFont(fontSize, 0, 0, 0, fontWeight, FALSE, FALSE, FALSE, ANSI_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH | FF_SWISS, fontName));
 }

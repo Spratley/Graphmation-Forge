@@ -10,11 +10,9 @@ WCHAR szPropertiesPanelClass[MAX_LOADSTRING];   // Properties panel window class
 
 GraphmationForgeApp app;
 
-HFONT hFont;
-
 // Forward declarations of functions included in this code module:
-ATOM                RegisterWindowClass(HINSTANCE hInstance, LPCWSTR className, HBRUSH brush);
-BOOL                InitInstance(HINSTANCE, int);
+// ATOM                RegisterWindowClass(HINSTANCE hInstance, LPCWSTR className, HBRUSH brush);
+// BOOL                InitInstance(HINSTANCE, int);
 LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK    About(HWND, UINT, WPARAM, LPARAM);
 
@@ -29,17 +27,10 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     app.SetInstanceHandle(hInstance);
     app.LoadStringResources();
     app.CreateBrushPalette();
+    app.CreateFonts();
     app.RegisterWindowClasses();
 
-    // HBRUSH brushBackground = CreateSolidBrush(COLOR_BG);
-    // HBRUSH brushNode = CreateSolidBrush(COLOR_NODE);
-    // 
-    // RegisterWindowClass(hInstance, szWindowClass, brushBackground);
-    // RegisterWindowClass(hInstance, szNodeClass, brushNode);
-
-    hFont = CreateFont(25, 0, 0, 0, FW_BOLD, FALSE, FALSE, FALSE, ANSI_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH | FF_SWISS, L"Segoe UI");
-
-    if (!InitInstance (hInstance, nCmdShow))
+    if (!app.InitInstance(nCmdShow))
     {
         return FALSE;
     }
@@ -58,53 +49,30 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
         // app.Update(msg.hwnd);
     }
-
-    // GdiplusShutdown(gdiplusToken);
-
+    
     return (int) msg.wParam;
 }
 
-ATOM RegisterWindowClass(HINSTANCE hInstance, LPCWSTR className, HBRUSH brush)
-{
-    WNDCLASSEXW wcex;
-
-    wcex.cbSize = sizeof(WNDCLASSEX);
-    
-    wcex.style          = CS_HREDRAW | CS_VREDRAW;
-    wcex.lpfnWndProc    = WndProc;
-    wcex.cbClsExtra     = 0;
-    wcex.cbWndExtra     = 0;
-    wcex.hInstance      = hInstance;
-    wcex.hIcon          = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_GRAPHMATIONFORGE));
-    wcex.hCursor        = LoadCursor(nullptr, IDC_ARROW);
-    wcex.hbrBackground  = brush;// (HBRUSH)(COLOR_WINDOW+1);
-    wcex.lpszMenuName   = MAKEINTRESOURCEW(IDC_GRAPHMATIONFORGE);
-    wcex.lpszClassName  = className;
-    wcex.hIconSm        = LoadIcon(wcex.hInstance, MAKEINTRESOURCE(IDI_SMALL));
-
-    return RegisterClassExW(&wcex);
-}
-
-BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
-{
-   hInst = hInstance;
-
-   HWND hWnd = CreateWindowW(szWindowClass, szTitle, WS_OVERLAPPEDWINDOW,
-      CW_USEDEFAULT, 0, CW_USEDEFAULT, 0, nullptr, nullptr, hInstance, nullptr);
-
-   if (!hWnd)
-   {
-      return FALSE;
-   }
-
-   // GdiplusStartupInput gdiplusStartupInput;
-   // GdiplusStartup(&gdiplusToken, &gdiplusStartupInput, NULL);
-
-   ShowWindow(hWnd, nCmdShow);
-   UpdateWindow(hWnd);
-
-   return TRUE;
-}
+//BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
+//{
+//   hInst = hInstance;
+//
+//   HWND hWnd = CreateWindowW(szWindowClass, szTitle, WS_OVERLAPPEDWINDOW,
+//      CW_USEDEFAULT, 0, CW_USEDEFAULT, 0, nullptr, nullptr, hInstance, nullptr);
+//
+//   if (!hWnd)
+//   {
+//      return FALSE;
+//   }
+//
+//   // GdiplusStartupInput gdiplusStartupInput;
+//   // GdiplusStartup(&gdiplusToken, &gdiplusStartupInput, NULL);
+//
+//   ShowWindow(hWnd, nCmdShow);
+//   UpdateWindow(hWnd);
+//
+//   return TRUE;
+//}
 
 BOOL CALLBACK EnumChildProc(HWND hWndChild, LPARAM lParam)
 {
@@ -134,87 +102,87 @@ BOOL CALLBACK EnumChildProc(HWND hWndChild, LPARAM lParam)
     return TRUE;
 }
 
-LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
-{
-    HWND hWndLabel; 
-    HWND hWndnodeLabel;
-    HRGN region;
-
-    int id;
-
-    switch (message)
-    {
-    case WM_CREATE:
-        
-        id = GetWindowLong(hWnd, GWL_ID);
-        if (id != 169)
-        {
-            hWndLabel = CreateWindow(szNodeClass, L"TestNode", WS_CHILD | WS_VISIBLE, 10, 10, 150, 50, hWnd, (HMENU)(169), NULL, NULL);
-            region = CreateRoundRectRgn(0, 0, 150, 50, 20, 20);
-            SetWindowRgn(hWndLabel, region, true);
-
-            hWndnodeLabel = CreateWindow(szNodeClass, L"TestNode2", WS_CHILD | WS_VISIBLE, 460, 302, 150, 50, hWnd, (HMENU)(169), NULL, NULL);
-            region = CreateRoundRectRgn(0, 0, 150, 50, 20, 20);
-            SetWindowRgn(hWndnodeLabel, region, true);
-        }
-
-        break;
-    case WM_COMMAND:
-        {
-            int wmId = LOWORD(wParam);
-            // Parse the menu selections:
-            switch (wmId)
-            {
-            case IDM_ABOUT:
-                DialogBox(hInst, MAKEINTRESOURCE(IDD_ABOUTBOX), hWnd, About);
-                break;
-            case IDM_EXIT:
-                DestroyWindow(hWnd);
-                break;
-            default:
-                return DefWindowProc(hWnd, message, wParam, lParam);
-            }
-        }
-        break;
-    case WM_PAINT:
-        {
-            PAINTSTRUCT ps;
-            HDC hdc = BeginPaint(hWnd, &ps);
-
-            id = GetWindowLong(hWnd, GWL_ID);
-            if (id == 169)
-            {
-                RECT textArea;
-                textArea.left = 0;
-                textArea.top = 0;
-                textArea.right = 150;
-                textArea.bottom = 50;
-                SetBkMode(hdc, TRANSPARENT);
-                SetTextColor(hdc, COLOR_FONT);
-                SelectObject(hdc, hFont);
-                DrawText(hdc, L"Bonk Text", 9, &textArea, DT_CENTER | DT_SINGLELINE | DT_VCENTER);
-            }
-
-            EndPaint(hWnd, &ps);
-        }
-        break;
-    case WM_DESTROY:
-        PostQuitMessage(0);
-        break;
-    case WM_SIZE:
-        RECT clientRect;
-        GetClientRect(hWnd, &clientRect);
-        EnumChildWindows(hWnd, EnumChildProc, (LPARAM)&clientRect);
-        break; 
-    case WM_KEYDOWN:
-        break;
-    case WM_KEYUP:
-        break;
-    default:
-        return DefWindowProc(hWnd, message, wParam, lParam);
-    }
-    return 0;
-}
+// LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+// {
+//     HWND hWndLabel; 
+//     HWND hWndnodeLabel;
+//     HRGN region;
+// 
+//     int id;
+// 
+//     switch (message)
+//     {
+//     case WM_CREATE:
+//         
+//         id = GetWindowLong(hWnd, GWL_ID);
+//         if (id != 169)
+//         {
+//             hWndLabel = CreateWindow(szNodeClass, L"TestNode", WS_CHILD | WS_VISIBLE, 10, 10, 150, 50, hWnd, (HMENU)(169), NULL, NULL);
+//             region = CreateRoundRectRgn(0, 0, 150, 50, 20, 20);
+//             SetWindowRgn(hWndLabel, region, true);
+// 
+//             hWndnodeLabel = CreateWindow(szNodeClass, L"TestNode2", WS_CHILD | WS_VISIBLE, 460, 302, 150, 50, hWnd, (HMENU)(169), NULL, NULL);
+//             region = CreateRoundRectRgn(0, 0, 150, 50, 20, 20);
+//             SetWindowRgn(hWndnodeLabel, region, true);
+//         }
+// 
+//         break;
+//     case WM_COMMAND:
+//         {
+//             int wmId = LOWORD(wParam);
+//             // Parse the menu selections:
+//             switch (wmId)
+//             {
+//             case IDM_ABOUT:
+//                 DialogBox(hInst, MAKEINTRESOURCE(IDD_ABOUTBOX), hWnd, About);
+//                 break;
+//             case IDM_EXIT:
+//                 DestroyWindow(hWnd);
+//                 break;
+//             default:
+//                 return DefWindowProc(hWnd, message, wParam, lParam);
+//             }
+//         }
+//         break;
+//     case WM_PAINT:
+//         {
+//             PAINTSTRUCT ps;
+//             HDC hdc = BeginPaint(hWnd, &ps);
+// 
+//             id = GetWindowLong(hWnd, GWL_ID);
+//             if (id == 169)
+//             {
+//                 RECT textArea;
+//                 textArea.left = 0;
+//                 textArea.top = 0;
+//                 textArea.right = 150;
+//                 textArea.bottom = 50;
+//                 SetBkMode(hdc, TRANSPARENT);
+//                 SetTextColor(hdc, COLOR_FONT);
+//                 SelectObject(hdc, hFont);
+//                 DrawText(hdc, L"Bonk Text", 9, &textArea, DT_CENTER | DT_SINGLELINE | DT_VCENTER);
+//             }
+// 
+//             EndPaint(hWnd, &ps);
+//         }
+//         break;
+//     case WM_DESTROY:
+//         PostQuitMessage(0);
+//         break;
+//     case WM_SIZE:
+//         RECT clientRect;
+//         GetClientRect(hWnd, &clientRect);
+//         EnumChildWindows(hWnd, EnumChildProc, (LPARAM)&clientRect);
+//         break; 
+//     case WM_KEYDOWN:
+//         break;
+//     case WM_KEYUP:
+//         break;
+//     default:
+//         return DefWindowProc(hWnd, message, wParam, lParam);
+//     }
+//     return 0;
+// }
 
 // Message handler for about box.
 INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
