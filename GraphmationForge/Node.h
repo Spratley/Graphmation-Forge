@@ -1,38 +1,18 @@
-//#pragma once
-//
-//#include "framework.h"
-//#include <string>
-//
-//struct Node
-//{
-//    void SetPosition(HWND& hWnd, Point p);
-//    void InvalidateScreen(HWND& hWnd);
-//    void InvalidateCurrentPosition(HWND& hWnd);
-//
-//    bool IsMouseOverlapping(Point mousePos);
-//
-//    void SetSelected(HWND hWnd, bool const selected);
-//
-//    Point m_position;
-//    Point m_invalidPosition;
-//    std::string m_nodeName;
-//    std::string m_animation;
-//
-//    bool m_isSelected = false;
-//};
-
+#pragma once
 #include "framework.h"
 #include <string>
 
 struct Node
 {
 public:
+    Node(HWND const windowHandle);
+
     void SetPosition(HWND& parentWindowHandle, POINT const& p);
     void InvalidateNodeArea(HWND& parentWindowHandle);
 
     bool IsMouseOverlapping(POINT mousePos);
 
-    void SetSelected(HWND hWnd, bool const selected);
+    void SetSelectionState(SelectionState const state);
 
 private:
     HWND m_windowHandle;
@@ -40,4 +20,6 @@ private:
     POINT m_position;
     std::string m_nodeName;
     std::string m_associatedAnimation;
+
+    SelectionState m_selectionState;
 };

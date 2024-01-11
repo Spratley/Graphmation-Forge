@@ -4,17 +4,13 @@
 
 
 // Global Variables:
-HINSTANCE hInst;                                // Current instance
-WCHAR szGraphAreaClass[MAX_LOADSTRING];         // Graph area window class name
-WCHAR szPropertiesPanelClass[MAX_LOADSTRING];   // Properties panel window class name
+// HINSTANCE hInst;                                // Current instance
 
 GraphmationForgeApp app;
 
 // Forward declarations of functions included in this code module:
-// ATOM                RegisterWindowClass(HINSTANCE hInstance, LPCWSTR className, HBRUSH brush);
-// BOOL                InitInstance(HINSTANCE, int);
-LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
-INT_PTR CALLBACK    About(HWND, UINT, WPARAM, LPARAM);
+// LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
+// INT_PTR CALLBACK    About(HWND, UINT, WPARAM, LPARAM);
 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
                      _In_opt_ HINSTANCE hPrevInstance,
@@ -47,32 +43,11 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
             DispatchMessage(&msg);
         }
 
-        // app.Update(msg.hwnd);
+        app.Update();
     }
     
     return (int) msg.wParam;
 }
-
-//BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
-//{
-//   hInst = hInstance;
-//
-//   HWND hWnd = CreateWindowW(szWindowClass, szTitle, WS_OVERLAPPEDWINDOW,
-//      CW_USEDEFAULT, 0, CW_USEDEFAULT, 0, nullptr, nullptr, hInstance, nullptr);
-//
-//   if (!hWnd)
-//   {
-//      return FALSE;
-//   }
-//
-//   // GdiplusStartupInput gdiplusStartupInput;
-//   // GdiplusStartup(&gdiplusToken, &gdiplusStartupInput, NULL);
-//
-//   ShowWindow(hWnd, nCmdShow);
-//   UpdateWindow(hWnd);
-//
-//   return TRUE;
-//}
 
 BOOL CALLBACK EnumChildProc(HWND hWndChild, LPARAM lParam)
 {

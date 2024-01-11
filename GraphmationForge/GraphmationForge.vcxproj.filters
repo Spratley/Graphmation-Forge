@@ -48,6 +48,9 @@
     <ClInclude Include="GraphmationDefines.h">
       <Filter>Header Files\Application</Filter>
     </ClInclude>
+    <ClInclude Include="SelectionState.h">
+      <Filter>Header Files\Application</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="GraphmationForge.rc">

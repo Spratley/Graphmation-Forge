@@ -7,6 +7,7 @@
 #include <malloc.h>
 #include <memory.h>
 #include <tchar.h>
+
 // #include <objidl.h>
 // #include <gdiplus.h>
 // 
@@ -14,3 +15,4 @@
 // #pragma comment (lib,"Gdiplus.lib")
 
 #include "GraphmationDefines.h"
+#include "SelectionState.h"

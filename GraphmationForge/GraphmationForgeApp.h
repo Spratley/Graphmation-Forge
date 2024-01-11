@@ -7,6 +7,8 @@
 #include <unordered_map>
 #include <vector>
 
+#define WIN32_CALLBACK_PARAMS HWND const hWnd, UINT const message, WPARAM const wParam, LPARAM const lParam
+
 struct Node;
 
 class GraphmationForgeApp
@@ -19,9 +21,12 @@ private:
 public:
     GraphmationForgeApp();
 
+    void Update();
+
     // Win32 message handlers
-    int OnWindowCreated(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
-    int OnWindowPaint(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
+    int OnWindowCreated(WIN32_CALLBACK_PARAMS);
+    int OnWindowPaint(WIN32_CALLBACK_PARAMS);
+    int OnWindowCommand(WIN32_CALLBACK_PARAMS);
 
     void SetInstanceHandle(HINSTANCE const instanceHandle) { m_instanceHandle = instanceHandle; }
     bool InitInstance(int cmdShow);
@@ -39,9 +44,17 @@ private:
     void CreateWindowFont(const wchar_t* fontName, int const fontSize, int const fontWeight);
     ATOM RegisterWindowClass(LPCWSTR className, HBRUSH backgroundBrush);
 
+    // Creators
+    void OnMainWindowCreated(WIN32_CALLBACK_PARAMS);
+
+    // Paint Functions
+    void PaintMainWindow(WIN32_CALLBACK_PARAMS);
+    void PaintNode(WIN32_CALLBACK_PARAMS);
+
 private:
     // Win32
     HINSTANCE m_instanceHandle;
+    HWND m_mainWindowHandle;
 
     std::unordered_map<int, WCHAR[MAX_LOADSTRING]> m_stringResources;
 

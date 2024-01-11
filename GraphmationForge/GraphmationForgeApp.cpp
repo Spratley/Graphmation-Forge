@@ -1,41 +1,8 @@
 #include "GraphmationForgeApp.h"
-//#include "GraphmationForgeApp.h"
-//
-//GraphmationForgeApp::GraphmationForgeApp()
-//: m_graphDrawer(*this)
-//{}
-//
-//void GraphmationForgeApp::Update(HWND& hWnd)
-//{
-//    POINT p;
-//    GetCursorPos(&p);
-//    ScreenToClient(hWnd, &p);
-//    Point clientMousePos(p.x, p.y);
-//
-//    temp_node.SetPosition(hWnd, Point(100, 300));
-//
-//    if (temp_node.IsMouseOverlapping(clientMousePos))
-//    {
-//        temp_node.SetSelected(hWnd, true);
-//    }
-//    else
-//    {
-//        temp_node.SetSelected(hWnd, false);
-//    }
-//}
-//
-//Gdiplus::Point const GraphmationForgeApp::GetScreenDimensions(HWND const& hWnd) const
-//{
-//    Point result;
-//    RECT windowRect;
-//    if (GetClientRect(hWnd, &windowRect))
-//    {
-//        result.X = windowRect.right - windowRect.left;
-//        result.Y = windowRect.bottom - windowRect.top;
-//    }
-//    return result;
-//}
 
+#include "Node.h"
+
+#include <strsafe.h>
 GraphmationForgeApp* GraphmationForgeApp::s_instance;
 
 // Global callback for Win32
@@ -49,7 +16,10 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         retValue = instance->OnWindowCreated(hWnd, message, wParam, lParam);
         break;
     case WM_PAINT:
-        retValue = instance->OnWindowCreated(hWnd, message, wParam, lParam);
+        retValue = instance->OnWindowPaint(hWnd, message, wParam, lParam);
+        break;
+    case WM_COMMAND:
+        retValue = instance->OnWindowCommand(hWnd, message, wParam, lParam);
         break;
     case WM_DESTROY:
         PostQuitMessage(0);
@@ -70,13 +40,83 @@ GraphmationForgeApp::GraphmationForgeApp()
     s_instance = this;
 }
 
-int GraphmationForgeApp::OnWindowCreated(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+void GraphmationForgeApp::Update()
 {
+    POINT p;
+    GetCursorPos(&p);
+    ScreenToClient(m_mainWindowHandle, &p);
+        
+    for (Node* const node : m_nodes)
+    {
+        if (node->IsMouseOverlapping(p))
+        {
+            node->SetSelectionState(HIGHLIGHTED);
+        }
+        else
+        {
+            node->SetSelectionState(NONE);
+        }
+    }
+}
+
+int GraphmationForgeApp::OnWindowCreated(WIN32_CALLBACK_PARAMS)
+{
+    if (hWnd == m_mainWindowHandle)
+    {
+        OnMainWindowCreated(hWnd, message, wParam, lParam);
+        return 0;
+    }
+
+    int id = GetWindowLong(hWnd, GWL_ID);
+    switch (id)
+    {
+    default:
+        return -1;
+    }
+
     return 0;
 }
 
-int GraphmationForgeApp::OnWindowPaint(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+int GraphmationForgeApp::OnWindowPaint(WIN32_CALLBACK_PARAMS)
 {
+    if (hWnd == m_mainWindowHandle)
+    {
+        PaintMainWindow(hWnd, message, wParam, lParam);
+        return 0;
+    }
+
+    int id = GetWindowLong(hWnd, GWL_ID);
+    switch (id)
+    {
+    case ID_CLASS_NODE:
+        PaintNode(hWnd, message, wParam, lParam);
+        break;
+    default:
+        return -1;
+    }
+
+    return 0;
+}
+
+int GraphmationForgeApp::OnWindowCommand(WIN32_CALLBACK_PARAMS)
+{
+    int commandID = LOWORD(wParam);
+    // Parse the menu selections:
+    switch (commandID)
+    {
+        // Disable ABOUT menu for now
+    // case IDM_ABOUT:
+    //     DialogBox(hInst, MAKEINTRESOURCE(IDD_ABOUTBOX), hWnd, About);
+    //     break;
+    case IDM_EXIT:
+        DestroyWindow(hWnd);
+        break;
+    case IDM_INSERT_ANIMSTATE:
+        CreateNode();
+        break;
+    default:
+        return -1;
+    }
     return 0;
 }
 
@@ -101,18 +141,46 @@ ATOM GraphmationForgeApp::RegisterWindowClass(LPCWSTR className, HBRUSH backgrou
     return RegisterClassExW(&wcex);
 }
 
+void GraphmationForgeApp::OnMainWindowCreated(WIN32_CALLBACK_PARAMS)
+{
+    // Create all default sub-windows
+}
+
+void GraphmationForgeApp::PaintMainWindow(WIN32_CALLBACK_PARAMS)
+{
+
+}
+
+void GraphmationForgeApp::PaintNode(WIN32_CALLBACK_PARAMS)
+{
+    PAINTSTRUCT ps;
+    HDC hdc = BeginPaint(hWnd, &ps);
+    
+    RECT textArea;
+    textArea.left = 0;
+    textArea.top = 0;
+    textArea.right = 150;
+    textArea.bottom = 50;
+    SetBkMode(hdc, TRANSPARENT);
+    SetTextColor(hdc, COLOR_FONT);
+    SelectObject(hdc, m_fonts[0]);
+    DrawText(hdc, L"Bonk Text", 9, &textArea, DT_CENTER | DT_SINGLELINE | DT_VCENTER);
+        
+    EndPaint(hWnd, &ps);
+}
+
 bool GraphmationForgeApp::InitInstance(int cmdShow)
 {
-    HWND hWnd = CreateWindowW(m_stringResources[IDC_GRAPHMATIONFORGE], m_stringResources[IDS_APP_TITLE], WS_OVERLAPPEDWINDOW,
-        CW_USEDEFAULT, 0, CW_USEDEFAULT, 0, nullptr, nullptr, m_instanceHandle, nullptr);
-
-    if (!hWnd)
+    m_mainWindowHandle = CreateWindowW(m_stringResources[IDC_GRAPHMATIONFORGE], m_stringResources[IDS_APP_TITLE], WS_OVERLAPPEDWINDOW,
+        CW_USEDEFAULT, 0, CW_USEDEFAULT, 0, nullptr, nullptr, nullptr, m_instanceHandle, nullptr);
+           
+    if (!m_mainWindowHandle)
     {
         return FALSE;
     }
 
-    ShowWindow(hWnd, cmdShow);
-    UpdateWindow(hWnd);
+    ShowWindow(m_mainWindowHandle, cmdShow);
+    UpdateWindow(m_mainWindowHandle);
 
     return TRUE;
 }
@@ -146,7 +214,24 @@ void GraphmationForgeApp::RegisterWindowClasses()
 
 Node* const GraphmationForgeApp::CreateNode()
 {
-    return nullptr;
+    HWND nodeWindowHandle = 
+        CreateWindow(m_stringResources[ID_CLASS_NODE],
+                     L"Node",
+                     WS_CHILD | WS_VISIBLE,
+                     10, 10, 150, 50,
+                     m_mainWindowHandle,
+                     (HMENU)ID_CLASS_NODE, NULL, NULL);
+    HRGN region = CreateRoundRectRgn(0, 0, 150, 50, 20, 20);
+    SetWindowRgn(nodeWindowHandle, region, true);
+
+    Node* node = new Node(nodeWindowHandle);
+    m_nodes.push_back(node);
+
+    POINT p;
+    p.x = 0;
+    p.y = 0;
+    node->SetPosition(m_mainWindowHandle, p);
+    return node;
 }
 
 void GraphmationForgeApp::LoadStringResource(int resourceID)
