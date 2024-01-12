@@ -1,27 +1,18 @@
 #include "Node.h"
 
-Node::Node(HWND const windowHandle)
-: m_windowHandle(windowHandle)
+Node::Node(HWND const parentWindowHandle, HWND const windowHandle)
+: ISelectable(parentWindowHandle)
+, m_windowHandle(windowHandle)
 , m_position()
-, m_nodeName("New Node")
-, m_associatedAnimation("")
+, m_nodeName(L"New Node")
+, m_associatedAnimation(L"")
 {}
 
-void Node::SetPosition(HWND& parentWindowHandle, POINT const& p)
+void Node::SetPosition(POINT const& p)
 {
-    InvalidateNodeArea(parentWindowHandle);
+    InvalidatePaintArea();
     m_position = p;
-    InvalidateNodeArea(parentWindowHandle);
-}
-
-void Node::InvalidateNodeArea(HWND & parentWindowHandle)
-{
-    RECT newDrawArea;
-    newDrawArea.left = m_position.x;
-    newDrawArea.top = m_position.y;
-    newDrawArea.right = m_position.x + NODE_WIDTH;
-    newDrawArea.bottom = m_position.y + NODE_HEIGHT;
-    InvalidateRect(parentWindowHandle, &newDrawArea, false);
+    InvalidatePaintArea();
 }
 
 bool Node::IsMouseOverlapping(POINT mousePos)
@@ -41,7 +32,40 @@ bool Node::IsMouseOverlapping(POINT mousePos)
     return true;
 }
 
-void Node::SetSelectionState(SelectionState const state)
+RECT const Node::GetPaintRect() const
 {
-    m_selectionState = state;
+    RECT paintRect;
+    paintRect.left = m_position.x;
+    paintRect.top = m_position.y;
+    paintRect.right = m_position.x + NODE_WIDTH;
+    paintRect.bottom = m_position.y + NODE_HEIGHT;
+    return paintRect;
+}
+
+void Node::StartDrag(POINT mousePos)
+{
+    m_dragStartRelativePosition = mousePos;
+}
+
+void Node::SetDragged(POINT mousePos)
+{
+    int deltaDragX = mousePos.x - m_dragStartRelativePosition.x;
+    int deltaDragY = mousePos.y - m_dragStartRelativePosition.y;
+
+    POINT newPos;
+    newPos.x = m_position.x + deltaDragX;
+    newPos.y = m_position.y + deltaDragY;
+
+    SetPosition(newPos);
+}
+
+void Node::SetAnimationName(std::wstring const & animationName)
+{
+    m_associatedAnimation = animationName;
+}
+
+void Node::SetNodeName(std::wstring const& name)
+{
+    m_nodeName = name;
+    InvalidatePaintArea();
 }

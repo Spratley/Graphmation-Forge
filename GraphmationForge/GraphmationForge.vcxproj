@@ -153,9 +153,12 @@
   <ItemGroup>
     <ClInclude Include="framework.h" />
     <ClInclude Include="GraphDrawer.h" />
+    <ClInclude Include="GraphmationColors.h" />
     <ClInclude Include="GraphmationDefines.h" />
     <ClInclude Include="GraphmationForgeApp.h" />
     <ClInclude Include="GraphmationForge.h" />
+    <ClInclude Include="IPaintable.h" />
+    <ClInclude Include="ISelectable.h" />
     <ClInclude Include="Node.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="SelectionState.h" />
@@ -165,6 +168,8 @@
     <ClCompile Include="GraphDrawer.cpp" />
     <ClCompile Include="GraphmationForgeApp.cpp" />
     <ClCompile Include="GraphmationForgeMain.cpp" />
+    <ClCompile Include="IPaintable.cpp" />
+    <ClCompile Include="ISelectable.cpp" />
     <ClCompile Include="Node.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -173,6 +178,9 @@
   <ItemGroup>
     <Image Include="GraphmationForge.ico" />
     <Image Include="small.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="GraphmationColors.inl" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

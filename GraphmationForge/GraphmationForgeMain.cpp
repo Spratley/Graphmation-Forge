@@ -2,16 +2,6 @@
 
 #include "GraphmationForgeApp.h"
 
-
-// Global Variables:
-// HINSTANCE hInst;                                // Current instance
-
-GraphmationForgeApp app;
-
-// Forward declarations of functions included in this code module:
-// LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
-// INT_PTR CALLBACK    About(HWND, UINT, WPARAM, LPARAM);
-
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
                      _In_opt_ HINSTANCE hPrevInstance,
                      _In_ LPWSTR    lpCmdLine,
@@ -20,6 +10,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     UNREFERENCED_PARAMETER(hPrevInstance);
     UNREFERENCED_PARAMETER(lpCmdLine);
 
+    GraphmationForgeApp app;
     app.SetInstanceHandle(hInstance);
     app.LoadStringResources();
     app.CreateBrushPalette();
@@ -43,6 +34,9 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
             DispatchMessage(&msg);
         }
 
+        // TODO: Move all functionality out of update and into events
+        // Win32 has events for entering, hovering and leaving client areas
+        // All node based operations could be achieved through this
         app.Update();
     }
     
@@ -50,9 +44,8 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 }
 
 BOOL CALLBACK EnumChildProc(HWND hWndChild, LPARAM lParam)
-{
-    LPRECT rcParent;
-    int idChild;
+{    int idChild;
+
     
     idChild = GetWindowLong(hWndChild, GWL_ID);
 

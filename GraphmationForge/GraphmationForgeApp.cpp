@@ -1,8 +1,11 @@
 #include "GraphmationForgeApp.h"
 
+#include "GraphmationColors.h"
 #include "Node.h"
 
-#include <strsafe.h>
+// #include <strsafe.h>
+#include <windowsx.h>
+
 GraphmationForgeApp* GraphmationForgeApp::s_instance;
 
 // Global callback for Win32
@@ -15,13 +18,23 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     case WM_CREATE:
         retValue = instance->OnWindowCreated(hWnd, message, wParam, lParam);
         break;
+    case WM_ERASEBKGND:
+        retValue = instance->OnPaintCustomBackground(hWnd, message, wParam, lParam);
+        break;
     case WM_PAINT:
         retValue = instance->OnWindowPaint(hWnd, message, wParam, lParam);
         break;
     case WM_COMMAND:
         retValue = instance->OnWindowCommand(hWnd, message, wParam, lParam);
         break;
+    case WM_LBUTTONDOWN:
+        retValue = instance->OnLeftMouseButtonDown(hWnd, message, wParam, lParam);
+        break;
+    case WM_LBUTTONUP:
+        retValue = instance->OnLeftMouseButtonUp(hWnd, message, wParam, lParam);
+        break;
     case WM_DESTROY:
+        // TODO: CHECK FOR UNSAVED DOCUMENT
         PostQuitMessage(0);
         return 0;
     }
@@ -46,15 +59,30 @@ void GraphmationForgeApp::Update()
     GetCursorPos(&p);
     ScreenToClient(m_mainWindowHandle, &p);
         
+    if (m_isDragging)
+    {
+        for (ISelectable* selectable : m_selectedObjects)
+        {
+            // TODO: Don't assume node
+            Node* node = static_cast<Node*>(selectable);
+            node->SetDragged(p);
+        }
+        return;
+    }
+
+    m_potentialSelectable = nullptr;
     for (Node* const node : m_nodes)
     {
+        SelectionState nextMouseOverState = NONE;
         if (node->IsMouseOverlapping(p))
         {
-            node->SetSelectionState(HIGHLIGHTED);
+            m_potentialSelectable = node;
+            nextMouseOverState = HIGHLIGHTED;
         }
-        else
+
+        if (node->GetSelectionState() != SELECTED)
         {
-            node->SetSelectionState(NONE);
+            node->SetSelectionState(nextMouseOverState);
         }
     }
 }
@@ -67,9 +95,23 @@ int GraphmationForgeApp::OnWindowCreated(WIN32_CALLBACK_PARAMS)
         return 0;
     }
 
+    // int id = GetWindowLong(hWnd, GWL_ID);
+    // switch (id)
+    // {
+    // default:
+    //     return -1;
+    // }
+
+    return 0;
+}
+
+int GraphmationForgeApp::OnPaintCustomBackground(WIN32_CALLBACK_PARAMS)
+{
     int id = GetWindowLong(hWnd, GWL_ID);
     switch (id)
     {
+    case ID_CLASS_NODE:
+        return PaintNodeBackground(hWnd, message, wParam, lParam);
     default:
         return -1;
     }
@@ -120,6 +162,66 @@ int GraphmationForgeApp::OnWindowCommand(WIN32_CALLBACK_PARAMS)
     return 0;
 }
 
+int GraphmationForgeApp::OnLeftMouseButtonDown(WIN32_CALLBACK_PARAMS)
+{   
+    // if (hWnd != m_mainWindowHandle)
+    // {
+    //     // Only interpret mouse button down for the main window
+    //     return -1;
+    // }
+
+    if (!m_potentialSelectable)
+    {
+        DeselectAll();
+        return 0;
+    }
+
+    POINT point = { GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam) };
+    if (DragDetect(hWnd, point))
+    {
+        for (ISelectable* selectable : m_selectedObjects)
+        {
+            // TODO: Don't assume node
+            Node* node = static_cast<Node*>(selectable);
+            node->StartDrag(point);
+        }
+
+        m_isDragging = true;
+    }
+    else
+    {
+        bool found = false;
+        for (ISelectable* selectable : m_selectedObjects)
+        {
+            if (selectable == m_potentialSelectable)
+            {
+                found = true;
+                break;
+            }
+        }
+
+        if (!found)
+        {
+            m_potentialSelectable->SetSelectionState(SELECTED);
+            m_selectedObjects.push_back(m_potentialSelectable);
+        }
+    }
+
+    return 0;
+}
+
+int GraphmationForgeApp::OnLeftMouseButtonUp(WIN32_CALLBACK_PARAMS)
+{
+    // if (hWnd != m_mainWindowHandle)
+    // {
+    //     // Only interpret mouse button up for the main window
+    //     return -1;
+    // }
+
+    m_isDragging = false;
+    return 0;
+}
+
 ATOM GraphmationForgeApp::RegisterWindowClass(LPCWSTR className, HBRUSH backgroundBrush)
 {
     WNDCLASSEXW wcex;
@@ -148,7 +250,9 @@ void GraphmationForgeApp::OnMainWindowCreated(WIN32_CALLBACK_PARAMS)
 
 void GraphmationForgeApp::PaintMainWindow(WIN32_CALLBACK_PARAMS)
 {
-
+    PAINTSTRUCT ps;
+    HDC hdc = BeginPaint(hWnd, &ps);
+    EndPaint(hWnd, &ps);
 }
 
 void GraphmationForgeApp::PaintNode(WIN32_CALLBACK_PARAMS)
@@ -156,17 +260,66 @@ void GraphmationForgeApp::PaintNode(WIN32_CALLBACK_PARAMS)
     PAINTSTRUCT ps;
     HDC hdc = BeginPaint(hWnd, &ps);
     
+    Node* nodeToPaint = FindNode(hWnd);
+
     RECT textArea;
     textArea.left = 0;
     textArea.top = 0;
     textArea.right = 150;
     textArea.bottom = 50;
     SetBkMode(hdc, TRANSPARENT);
-    SetTextColor(hdc, COLOR_FONT);
+    SetTextColor(hdc, g_colors[ID_COLOR_FONT]);
     SelectObject(hdc, m_fonts[0]);
-    DrawText(hdc, L"Bonk Text", 9, &textArea, DT_CENTER | DT_SINGLELINE | DT_VCENTER);
+
+    std::wstring const& nodeName = nodeToPaint->GetNodeName();
+    DrawText(hdc, nodeName.c_str(), nodeName.size(), &textArea, DT_CENTER | DT_SINGLELINE | DT_VCENTER);
         
     EndPaint(hWnd, &ps);
+}
+
+int GraphmationForgeApp::PaintNodeBackground(WIN32_CALLBACK_PARAMS)
+{
+    Node* nodeToPaint = FindNode(hWnd);
+    // Do nothing if we are deselected, default background is OK
+    HBRUSH backgroundColor;
+    switch (nodeToPaint->GetSelectionState())
+    {
+    default:
+    case NONE:
+        return -1;
+    case HIGHLIGHTED:
+        backgroundColor = m_brushes[ID_COLOR_NODE_HIGHLIGHTED];
+        break;
+    case SELECTED:
+        backgroundColor = m_brushes[ID_COLOR_NODE_SELECTED];
+    }
+
+    HDC hdc = (HDC)wParam;
+    RECT nodeRect;
+    GetClientRect(hWnd, &nodeRect);
+    FillRect(hdc, &nodeRect, backgroundColor);
+    return 0;
+}
+
+Node * const GraphmationForgeApp::FindNode(HWND const nodeWindowHandle) const
+{
+    for (Node* const node : m_nodes)
+    {
+        if (node->GetWindowHandle() == nodeWindowHandle)
+        {
+            return node;
+        }
+    }
+    return nullptr;
+}
+
+void GraphmationForgeApp::DeselectAll()
+{
+    for (ISelectable* selectable : m_selectedObjects)
+    {
+        selectable->SetSelectionState(NONE);
+    }
+    m_selectedObjects.clear();
 }
 
 bool GraphmationForgeApp::InitInstance(int cmdShow)
@@ -195,10 +348,10 @@ void GraphmationForgeApp::LoadStringResources()
 void GraphmationForgeApp::CreateBrushPalette()
 {
     m_brushes.resize(ID_COLOR_COUNT);
-
-    CreateBrush(ID_COLOR_BG, COLOR_BG);
-    CreateBrush(ID_COLOR_NODE, COLOR_NODE);
-    CreateBrush(ID_COLOR_FONT, COLOR_FONT);
+    for (int i = 0; i < ID_COLOR_COUNT; i++)
+    {
+        CreateBrush(i, g_colors[i]);
+    }
 }
 
 void GraphmationForgeApp::CreateFonts()
@@ -209,7 +362,7 @@ void GraphmationForgeApp::CreateFonts()
 void GraphmationForgeApp::RegisterWindowClasses()
 {
     RegisterWindowClass(m_stringResources[IDC_GRAPHMATIONFORGE], m_brushes[ID_COLOR_BG]); // Main window
-    RegisterWindowClass(m_stringResources[ID_CLASS_NODE], m_brushes[ID_COLOR_NODE]);
+    RegisterWindowClass(m_stringResources[ID_CLASS_NODE], m_brushes[ID_COLOR_NODE_DESELECTED]);
 }
 
 Node* const GraphmationForgeApp::CreateNode()
@@ -224,13 +377,13 @@ Node* const GraphmationForgeApp::CreateNode()
     HRGN region = CreateRoundRectRgn(0, 0, 150, 50, 20, 20);
     SetWindowRgn(nodeWindowHandle, region, true);
 
-    Node* node = new Node(nodeWindowHandle);
+    Node* node = new Node(m_mainWindowHandle, nodeWindowHandle);
     m_nodes.push_back(node);
 
     POINT p;
     p.x = 0;
     p.y = 0;
-    node->SetPosition(m_mainWindowHandle, p);
+    node->SetPosition(p);
     return node;
 }
 

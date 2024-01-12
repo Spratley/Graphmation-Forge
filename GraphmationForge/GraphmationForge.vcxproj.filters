@@ -51,6 +51,15 @@
     <ClInclude Include="SelectionState.h">
       <Filter>Header Files\Application</Filter>
     </ClInclude>
+    <ClInclude Include="GraphmationColors.h">
+      <Filter>Header Files\Application</Filter>
+    </ClInclude>
+    <ClInclude Include="ISelectable.h">
+      <Filter>Header Files\Application</Filter>
+    </ClInclude>
+    <ClInclude Include="IPaintable.h">
+      <Filter>Header Files\Application</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="GraphmationForge.rc">
@@ -78,5 +87,16 @@
     <ClCompile Include="Node.cpp">
       <Filter>Source Files\Application</Filter>
     </ClCompile>
+    <ClCompile Include="ISelectable.cpp">
+      <Filter>Source Files\Application</Filter>
+    </ClCompile>
+    <ClCompile Include="IPaintable.cpp">
+      <Filter>Source Files\Application</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="GraphmationColors.inl">
+      <Filter>Header Files\Application</Filter>
+    </None>
   </ItemGroup>
 </Project>
