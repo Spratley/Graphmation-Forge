@@ -7,9 +7,9 @@ public:
     IPaintable(HWND parentWindowHandle) : m_parentWindowHandle(parentWindowHandle) {}
 
     void InvalidatePaintArea();
-    virtual RECT const GetPaintRect() const = 0;
+    virtual HRGN const& GetPaintRegion() = 0;
 
 protected:
     HWND m_parentWindowHandle;
-
+    HRGN m_paintRegion;
 };

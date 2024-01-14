@@ -22,6 +22,12 @@
     <Filter Include="Source Files\Application">
       <UniqueIdentifier>{72a48a31-1bee-43e9-80ee-43912a21a231}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\JParse">
+      <UniqueIdentifier>{5bf1919f-5277-44b5-8e0c-98b72211ac7b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\JParse">
+      <UniqueIdentifier>{4dec280c-b194-4188-b830-92e38d550f33}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="targetver.h">
@@ -60,6 +66,21 @@
     <ClInclude Include="IPaintable.h">
       <Filter>Header Files\Application</Filter>
     </ClInclude>
+    <ClInclude Include="Timer.h">
+      <Filter>Header Files\Application</Filter>
+    </ClInclude>
+    <ClInclude Include="Transition.h">
+      <Filter>Header Files\Application</Filter>
+    </ClInclude>
+    <ClInclude Include="JParse\JParse.h">
+      <Filter>Header Files\JParse</Filter>
+    </ClInclude>
+    <ClInclude Include="ParsingDefines.h">
+      <Filter>Header Files\Application</Filter>
+    </ClInclude>
+    <ClInclude Include="StringConvert.h">
+      <Filter>Header Files\Application</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="GraphmationForge.rc">
@@ -91,6 +112,18 @@
       <Filter>Source Files\Application</Filter>
     </ClCompile>
     <ClCompile Include="IPaintable.cpp">
+      <Filter>Source Files\Application</Filter>
+    </ClCompile>
+    <ClCompile Include="Timer.cpp">
+      <Filter>Source Files\Application</Filter>
+    </ClCompile>
+    <ClCompile Include="Transition.cpp">
+      <Filter>Source Files\Application</Filter>
+    </ClCompile>
+    <ClCompile Include="JParse\JParse.cpp">
+      <Filter>Source Files\JParse</Filter>
+    </ClCompile>
+    <ClCompile Include="StringConvert.cpp">
       <Filter>Source Files\Application</Filter>
     </ClCompile>
   </ItemGroup>

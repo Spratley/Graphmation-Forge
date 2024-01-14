@@ -3,6 +3,7 @@
 #include "framework.h"
 #include "GraphmationForge.h"
 #include "GraphDrawer.h"
+#include "Timer.h"
 
 #include <unordered_map>
 #include <vector>
@@ -11,6 +12,7 @@
 
 class ISelectable;
 class Node;
+class Transition;
 
 class GraphmationForgeApp
 {
@@ -22,8 +24,6 @@ private:
 public:
     GraphmationForgeApp();
 
-    void Update();
-
     // Win32 message handlers
     int OnWindowCreated(WIN32_CALLBACK_PARAMS);
     int OnPaintCustomBackground(WIN32_CALLBACK_PARAMS);
@@ -31,6 +31,8 @@ public:
     int OnWindowCommand(WIN32_CALLBACK_PARAMS);
     int OnLeftMouseButtonDown(WIN32_CALLBACK_PARAMS);
     int OnLeftMouseButtonUp(WIN32_CALLBACK_PARAMS);
+    int OnMouseMoved(WIN32_CALLBACK_PARAMS);
+    int OnOpenContextMenu(WIN32_CALLBACK_PARAMS);
 
     void SetInstanceHandle(HINSTANCE const instanceHandle) { m_instanceHandle = instanceHandle; }
     bool InitInstance(int cmdShow);
@@ -41,6 +43,12 @@ public:
     void RegisterWindowClasses();
 
     Node* const CreateNode();
+    Node* const CreateNodeAtMousePos();
+
+    Transition* const CreateTransition(unsigned int const fromNodeID, unsigned int const toNodeID);
+    Transition* const CreateTransition(Node* const fromNode, Node* const toNode);
+
+    void InvalidateAttachedTransitions(std::vector<ISelectable*> const& selectedObjects);
     
 private:
     void LoadStringResource(int resourceID);
@@ -60,6 +68,13 @@ private:
 
     void DeselectAll();
 
+    // File IO
+    bool OpenFile();
+
+    bool LoadJSON(std::string filepath);
+    bool SaveJSON();
+    bool TryUnloadGraph();
+
 private:
     // Win32
     HINSTANCE m_instanceHandle;
@@ -71,11 +86,17 @@ private:
     std::vector<HFONT> m_fonts;
 
     std::vector<Node*> m_nodes;
+    std::vector<Transition*> m_transitions;
 
     // The selectable that is currently under the user's mouse
     ISelectable* m_potentialSelectable = nullptr;
     std::vector<ISelectable*> m_selectedObjects;
 
+    // File System
+    std::string m_loadedFilepath;
+    bool m_containsUnsavedChanges = false;
+
     // Temp?
+    TimePoint m_lastUpdateTime = 0;
     bool m_isDragging = false;
 };

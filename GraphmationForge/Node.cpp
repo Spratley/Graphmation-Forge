@@ -6,12 +6,15 @@ Node::Node(HWND const parentWindowHandle, HWND const windowHandle)
 , m_position()
 , m_nodeName(L"New Node")
 , m_associatedAnimation(L"")
-{}
+{
+    m_paintRegion = CreateRectRgn(0, 0, NODE_WIDTH, NODE_HEIGHT);
+}
 
 void Node::SetPosition(POINT const& p)
 {
     InvalidatePaintArea();
     m_position = p;
+    SetWindowPos(m_windowHandle, HWND_TOP, p.x, p.y, 0, 0, SWP_NOSIZE);
     InvalidatePaintArea();
 }
 
@@ -20,31 +23,34 @@ bool Node::IsMouseOverlapping(POINT mousePos)
     RECT nodeRect;
     GetClientRect(m_windowHandle, &nodeRect);
     
-    if (mousePos.x < nodeRect.left || mousePos.x > nodeRect.right)
+    if (mousePos.x < (nodeRect.left + m_position.x) || mousePos.x > (nodeRect.right + m_position.x))
     {
         return false;
     }
 
-    if (mousePos.y < nodeRect.top || mousePos.y > nodeRect.bottom)
+    if (mousePos.y < (nodeRect.top + m_position.y) || mousePos.y > (nodeRect.bottom + m_position.y))
     {
         return false;
     }
     return true;
 }
 
-RECT const Node::GetPaintRect() const
+HRGN const& Node::GetPaintRegion()
 {
     RECT paintRect;
     paintRect.left = m_position.x;
     paintRect.top = m_position.y;
     paintRect.right = m_position.x + NODE_WIDTH;
     paintRect.bottom = m_position.y + NODE_HEIGHT;
-    return paintRect;
+
+    SetRectRgn(m_paintRegion, paintRect.left, paintRect.top, paintRect.right, paintRect.bottom);
+    return m_paintRegion;
 }
 
 void Node::StartDrag(POINT mousePos)
 {
     m_dragStartRelativePosition = mousePos;
+    m_dragStartPos = m_position;
 }
 
 void Node::SetDragged(POINT mousePos)
@@ -53,8 +59,8 @@ void Node::SetDragged(POINT mousePos)
     int deltaDragY = mousePos.y - m_dragStartRelativePosition.y;
 
     POINT newPos;
-    newPos.x = m_position.x + deltaDragX;
-    newPos.y = m_position.y + deltaDragY;
+    newPos.x = m_dragStartPos.x + deltaDragX;
+    newPos.y = m_dragStartPos.y + deltaDragY;
 
     SetPosition(newPos);
 }
@@ -68,4 +74,9 @@ void Node::SetNodeName(std::wstring const& name)
 {
     m_nodeName = name;
     InvalidatePaintArea();
+}
+
+void Node::SetLoop(bool const loop)
+{
+    m_loop = loop;
 }

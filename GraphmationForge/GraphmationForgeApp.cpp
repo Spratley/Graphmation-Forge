@@ -2,8 +2,12 @@
 
 #include "GraphmationColors.h"
 #include "Node.h"
+#include "Transition.h"
+#include "StringConvert.h"
 
-// #include <strsafe.h>
+#include "JParse/JParse.h"
+#include "ParsingDefines.h"
+
 #include <windowsx.h>
 
 GraphmationForgeApp* GraphmationForgeApp::s_instance;
@@ -33,6 +37,12 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     case WM_LBUTTONUP:
         retValue = instance->OnLeftMouseButtonUp(hWnd, message, wParam, lParam);
         break;
+    case WM_MOUSEMOVE:
+        retValue = instance->OnMouseMoved(hWnd, message, wParam, lParam);
+        break;
+    case WM_CONTEXTMENU:
+        retValue = instance->OnOpenContextMenu(hWnd, message, wParam, lParam);
+        break;
     case WM_DESTROY:
         // TODO: CHECK FOR UNSAVED DOCUMENT
         PostQuitMessage(0);
@@ -51,40 +61,9 @@ GraphmationForgeApp::GraphmationForgeApp()
 {
     // Don't care about multiple instances because if there is then you already messed up
     s_instance = this;
-}
 
-void GraphmationForgeApp::Update()
-{
-    POINT p;
-    GetCursorPos(&p);
-    ScreenToClient(m_mainWindowHandle, &p);
-        
-    if (m_isDragging)
-    {
-        for (ISelectable* selectable : m_selectedObjects)
-        {
-            // TODO: Don't assume node
-            Node* node = static_cast<Node*>(selectable);
-            node->SetDragged(p);
-        }
-        return;
-    }
-
-    m_potentialSelectable = nullptr;
-    for (Node* const node : m_nodes)
-    {
-        SelectionState nextMouseOverState = NONE;
-        if (node->IsMouseOverlapping(p))
-        {
-            m_potentialSelectable = node;
-            nextMouseOverState = HIGHLIGHTED;
-        }
-
-        if (node->GetSelectionState() != SELECTED)
-        {
-            node->SetSelectionState(nextMouseOverState);
-        }
-    }
+    GraphmationTimer::Init(); 
+    AfxWinInit(m_instanceHandle, NULL, GetCommandLine(), 0);
 }
 
 int GraphmationForgeApp::OnWindowCreated(WIN32_CALLBACK_PARAMS)
@@ -146,15 +125,20 @@ int GraphmationForgeApp::OnWindowCommand(WIN32_CALLBACK_PARAMS)
     // Parse the menu selections:
     switch (commandID)
     {
-        // Disable ABOUT menu for now
-    // case IDM_ABOUT:
-    //     DialogBox(hInst, MAKEINTRESOURCE(IDD_ABOUTBOX), hWnd, About);
-    //     break;
     case IDM_EXIT:
         DestroyWindow(hWnd);
         break;
+    case IDM_OPEN:
+        OpenFile();
+        break;
     case IDM_INSERT_ANIMSTATE:
         CreateNode();
+        break;
+    case ID_CONTEXT_CREATE_ANIMSTATE:
+        CreateNodeAtMousePos();
+        break;
+    case ID_CONTEXT_CREATE_TRANSITION:
+
         break;
     default:
         return -1;
@@ -176,14 +160,20 @@ int GraphmationForgeApp::OnLeftMouseButtonDown(WIN32_CALLBACK_PARAMS)
         return 0;
     }
 
-    POINT point = { GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam) };
-    if (DragDetect(hWnd, point))
+    POINT mousePos;
+    GetCursorPos(&mousePos);
+    ScreenToClient(m_mainWindowHandle, &mousePos);
+
+    m_isDragging = false;
+
+    bool hasSelectedNodes = m_selectedObjects.size();
+    if (hasSelectedNodes && DragDetect(hWnd, mousePos))
     {
         for (ISelectable* selectable : m_selectedObjects)
         {
             // TODO: Don't assume node
             Node* node = static_cast<Node*>(selectable);
-            node->StartDrag(point);
+            node->StartDrag(mousePos);
         }
 
         m_isDragging = true;
@@ -191,17 +181,35 @@ int GraphmationForgeApp::OnLeftMouseButtonDown(WIN32_CALLBACK_PARAMS)
     else
     {
         bool found = false;
-        for (ISelectable* selectable : m_selectedObjects)
+        for(int i = 0; i < m_selectedObjects.size(); i++)
         {
-            if (selectable == m_potentialSelectable)
+            if (m_selectedObjects[i] == m_potentialSelectable)
             {
-                found = true;
+                // Deselect if holding shift or already selcted, otherwise deselect all others
+                if (wParam & MK_SHIFT || m_potentialSelectable->GetSelectionState() == SELECTED)
+                {
+                    m_potentialSelectable->SetSelectionState(NONE);
+                    m_selectedObjects.erase(m_selectedObjects.begin() + i);
+                    found = true;
+                }
+                else
+                {
+                    DeselectAll();
+                }
+
+
                 break;
             }
         }
 
         if (!found)
         {
+            int shift = wParam & MK_SHIFT;
+            if (!shift)
+            {
+                DeselectAll();
+            }
+
             m_potentialSelectable->SetSelectionState(SELECTED);
             m_selectedObjects.push_back(m_potentialSelectable);
         }
@@ -220,6 +228,82 @@ int GraphmationForgeApp::OnLeftMouseButtonUp(WIN32_CALLBACK_PARAMS)
 
     m_isDragging = false;
     return 0;
+}
+
+int GraphmationForgeApp::OnMouseMoved(WIN32_CALLBACK_PARAMS)
+{
+    POINT mousePos;
+    GetCursorPos(&mousePos);
+    ScreenToClient(m_mainWindowHandle, &mousePos);
+
+    if (m_isDragging)
+    {
+        // Check if enough time has passed to poll drag update
+        TimePoint timeSinceUpdate = GraphmationTimer::GetCurrentTimeMS() - m_lastUpdateTime;
+        if (timeSinceUpdate < 80)
+        {
+            return -1;
+        }
+        m_lastUpdateTime = GraphmationTimer::GetCurrentTimeMS();
+
+        InvalidateAttachedTransitions(m_selectedObjects);
+        for (ISelectable* selectable : m_selectedObjects)
+        {
+            Node* node = dynamic_cast<Node*>(selectable);
+            if (node)
+            {
+                node->SetDragged(mousePos);
+            }
+        }
+        InvalidateAttachedTransitions(m_selectedObjects);
+    }
+
+    m_potentialSelectable = nullptr;
+    for (Node* const node : m_nodes)
+    {
+        SelectionState nextMouseOverState = NONE;
+        if (node->IsMouseOverlapping(mousePos))
+        {
+            m_potentialSelectable = node;
+            nextMouseOverState = HIGHLIGHTED;
+        }
+
+        if (node->GetSelectionState() != SELECTED)
+        {
+            node->SetSelectionState(nextMouseOverState);
+        }
+    }
+
+    return 0;
+}
+
+int GraphmationForgeApp::OnOpenContextMenu(WIN32_CALLBACK_PARAMS)
+{
+    if (hWnd == m_mainWindowHandle)
+    {
+        POINT mousePos;
+        GetCursorPos(&mousePos);
+
+        HMENU hPopupMenu = CreatePopupMenu();
+        InsertMenu(hPopupMenu, 0, MF_BYPOSITION | MF_STRING, ID_CONTEXT_CREATE_ANIMSTATE, L"Insert Animation State");
+        SetForegroundWindow(hWnd);
+        TrackPopupMenu(hPopupMenu, TPM_BOTTOMALIGN | TPM_LEFTALIGN, mousePos.x, mousePos.y, 0, hWnd, NULL);
+        return 0;
+    }
+
+    int const id = GetWindowLong(hWnd, GWL_ID);
+    if (id == ID_CLASS_NODE)
+    {
+        POINT mousePos;
+        GetCursorPos(&mousePos);
+
+        HMENU hPopupMenu = CreatePopupMenu();
+        InsertMenu(hPopupMenu, 0, MF_BYPOSITION | MF_STRING, ID_CONTEXT_CREATE_TRANSITION, L"Create Transition");
+        SetForegroundWindow(hWnd);
+        TrackPopupMenu(hPopupMenu, TPM_BOTTOMALIGN | TPM_LEFTALIGN, mousePos.x, mousePos.y, 0, hWnd, NULL);
+        return 0;
+    }
+    return -1;
 }
 
 ATOM GraphmationForgeApp::RegisterWindowClass(LPCWSTR className, HBRUSH backgroundBrush)
@@ -252,6 +336,12 @@ void GraphmationForgeApp::PaintMainWindow(WIN32_CALLBACK_PARAMS)
 {
     PAINTSTRUCT ps;
     HDC hdc = BeginPaint(hWnd, &ps);
+
+    for (Transition* transition : m_transitions)
+    {
+        transition->Paint(hdc, m_brushes[ID_COLOR_TRANSITION_DESELECTED]);
+    }
+
     EndPaint(hWnd, &ps);
 }
 
@@ -322,6 +412,100 @@ void GraphmationForgeApp::DeselectAll()
     m_selectedObjects.clear();
 }
 
+bool GraphmationForgeApp::OpenFile()
+{
+    if (!TryUnloadGraph())
+    {
+        return false;
+    }
+
+    LPCTSTR filter = L"Animation Graph (*.animgraph)|*.animgraph|";
+
+    CFileDialog dlgFile(TRUE, _T("animgraph"), NULL, OFN_HIDEREADONLY | OFN_FILEMUSTEXIST, filter, CWnd::FromHandle(m_mainWindowHandle));
+
+    if (dlgFile.DoModal() != IDOK)
+    {
+        return false;
+    }
+
+    CString pathCStr(dlgFile.GetPathName().GetString());
+    std::wstring path(pathCStr);
+
+    return LoadJSON(StringConvert::ToStr(path));
+}
+
+bool GraphmationForgeApp::LoadJSON(std::string filepath)
+{
+    JParse::Root json;
+    json.Parse(filepath);
+
+    JParse::Object* objectRoot = json.m_item->GetAs<JParse::Object>();
+
+    // Load states
+    JParse::Array* states = objectRoot->Get<JParse::Array>(STATES_ROOT);
+    for (JParse::Item* state : states->m_contents)
+    {
+        JParse::Object* stateObject = state->GetAs<JParse::Object>();
+        // Load state data
+        std::string nodeName = TRY_PARSE(stateObject, STATE_NAME, JParse::String, "New State");
+        bool loop = TRY_PARSE(stateObject, STATE_LOOP, JParse::Boolean, false);
+
+        // Apply data to node
+        Node* stateNode = CreateNode();
+        stateNode->SetNodeName(StringConvert::ToWStr(nodeName));
+        stateNode->SetLoop(loop);
+    }
+
+    // Load transitions (Loop through states, use int iterator to index m_nodes array)
+    JParse::Array* transitions = objectRoot->Get<JParse::Array>(TRANSITIONS_ROOT);
+    for (unsigned int i = 0; i < m_nodes.size(); i++)
+    {
+        JParse::Object* stateObject = states->m_contents[i]->GetAs<JParse::Object>();
+        if (!stateObject->Has(TRANSITIONS_ROOT))
+        {
+            continue;
+        }
+
+        // Load transition
+        JParse::Array* transitionsForState = stateObject->Get<JParse::Array>(TRANSITIONS_ROOT);
+        for (JParse::Item* transition : transitionsForState->m_contents)
+        {
+            // Get References
+            JParse::Object* transitionObject = transition->GetAs<JParse::Object>();
+            int toStateID = TRY_PARSE(transitionObject, STATE_TRANSITION_STATE, JParse::Integer, -1);
+            int transitionID = TRY_PARSE(transitionObject, STATE_TRANSITION_TRANSITION_ID, JParse::Integer, -1);
+
+            if (toStateID == -1 || transitionID == -1)
+            {
+                // Invalid transition
+                continue;
+            }
+
+            Transition* transition = CreateTransition(i, toStateID);
+
+            if (transition == nullptr)
+            {
+                continue;
+            }
+
+            // Load conditions
+        }
+    }
+
+    return true;
+}
+
+bool GraphmationForgeApp::SaveJSON()
+{
+    return false;
+}
+
+bool GraphmationForgeApp::TryUnloadGraph()
+{
+    return !m_containsUnsavedChanges;
+    return false;
+}
+
 bool GraphmationForgeApp::InitInstance(int cmdShow)
 {
     m_mainWindowHandle = CreateWindowW(m_stringResources[IDC_GRAPHMATIONFORGE], m_stringResources[IDS_APP_TITLE], WS_OVERLAPPEDWINDOW,
@@ -371,20 +555,79 @@ Node* const GraphmationForgeApp::CreateNode()
         CreateWindow(m_stringResources[ID_CLASS_NODE],
                      L"Node",
                      WS_CHILD | WS_VISIBLE,
-                     10, 10, 150, 50,
+                     10, 10, NODE_WIDTH, NODE_HEIGHT,
                      m_mainWindowHandle,
                      (HMENU)ID_CLASS_NODE, NULL, NULL);
-    HRGN region = CreateRoundRectRgn(0, 0, 150, 50, 20, 20);
+    HRGN region = CreateRoundRectRgn(0, 0, NODE_WIDTH, NODE_HEIGHT, 20, 20);
     SetWindowRgn(nodeWindowHandle, region, true);
 
     Node* node = new Node(m_mainWindowHandle, nodeWindowHandle);
     m_nodes.push_back(node);
 
     POINT p;
-    p.x = 0;
-    p.y = 0;
+    p.x = 10;
+    p.y = 10;
     node->SetPosition(p);
+
     return node;
+}
+
+Node* const GraphmationForgeApp::CreateNodeAtMousePos()
+{
+    Node* node = CreateNode();
+    POINT mousePos;
+    GetCursorPos(&mousePos);
+    ScreenToClient(m_mainWindowHandle, &mousePos);
+    node->SetPosition(mousePos);
+    return node;
+}
+
+Transition * const GraphmationForgeApp::CreateTransition(unsigned int const fromNodeID, unsigned int const toNodeID)
+{
+    if (fromNodeID >= m_nodes.size() || toNodeID >= m_nodes.size())
+    {
+        return nullptr;
+    }
+
+    return CreateTransition(m_nodes[fromNodeID], m_nodes[toNodeID]);
+}
+
+Transition * const GraphmationForgeApp::CreateTransition(Node * const fromNode, Node * const toNode)
+{
+    Transition* transition = new Transition(m_mainWindowHandle);
+    transition->SetFromNode(fromNode);
+    transition->SetToNode(toNode);
+    transition->InvalidatePaintArea();
+
+    m_transitions.push_back(transition);
+    return transition;
+}
+
+void GraphmationForgeApp::InvalidateAttachedTransitions(std::vector<ISelectable*> const & selectedObjects)
+{
+    std::unordered_map<Transition*, bool> attachedTransitions;
+    for (ISelectable* selectable : selectedObjects)
+    {
+        if (Node* node = dynamic_cast<Node*>(selectable))
+        {
+            for (Transition* t : m_transitions)
+            {
+                if (t->GetFromNode() == node || t->GetToNode() == node)
+                {
+                    attachedTransitions[t] = true;
+                }
+            }
+        }
+    }
+
+    for (auto const& transition : attachedTransitions)
+    {
+        if (transition.second)
+        {
+            transition.first->InvalidatePaintArea();
+        }
+    }
+
 }
 
 void GraphmationForgeApp::LoadStringResource(int resourceID)

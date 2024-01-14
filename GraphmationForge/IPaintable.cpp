@@ -2,6 +2,6 @@
 
 void IPaintable::InvalidatePaintArea()
 {
-    RECT paintRect = GetPaintRect();
-    InvalidateRect(m_parentWindowHandle, &paintRect, false);
+    HRGN const& paintRegion = GetPaintRegion();
+    InvalidateRgn(m_parentWindowHandle, paintRegion, false);
 }

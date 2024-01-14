@@ -1,5 +1,9 @@
 #pragma once
 
+#define _WIN32_WINNT 0x0A00
+
+#define _AFXDLL
+#include <afxdlgs.h>
 #include "targetver.h"
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
