@@ -1,12 +1,17 @@
 #include "Transition.h"
 
+#include "GraphmationForgeApp.h"
 #include "Node.h"
+
+#include "ParsingDefines.h"
 
 #define TRANSITION_HALF_WIDTH 2.5f
 
 #define ARROW_THICKNESS 10.0f
 #define ARROW_HALF_HEIGHT 10.0f
 #define ARROW_HALF_WIDTH 20.0f
+
+#define TWO_WAY_TRANSITION_OFFSET 25.0f
 
 Transition::Transition(HWND const parentWindowHandle)
 : ISelectable(parentWindowHandle)
@@ -47,6 +52,15 @@ void Transition::UpdateRegion()
     float denom = sqrtf(powf((float)vector.x, 2.0f) + powf((float)vector.y, 2.0f));
     float normalVectorX = (float)vector.x / denom;
     float normalVectorY = (float)vector.y / denom;
+    
+    // Offset if we have a two way connection
+    if (GraphmationForgeApp::GetInstance()->AreNodesTwoWayConnected(m_fromNode, m_toNode))
+    {
+        fromPoint.x += static_cast<LONG>(normalVectorY * TWO_WAY_TRANSITION_OFFSET);
+        fromPoint.y += static_cast<LONG>(-normalVectorX * TWO_WAY_TRANSITION_OFFSET);
+        toPoint.x += static_cast<LONG>(normalVectorY * TWO_WAY_TRANSITION_OFFSET);
+        toPoint.y += static_cast<LONG>(-normalVectorX * TWO_WAY_TRANSITION_OFFSET);
+    }
 
     POINT widthVector;
     widthVector.x = static_cast<LONG>(normalVectorY * TRANSITION_HALF_WIDTH);
@@ -111,4 +125,50 @@ void Transition::BuildPointArrow(POINT * outPoints, float directionX, float dire
     outPoints[3] = { arrowEndX + arrowWidthVector.x - arrowHeightVector.x   , arrowEndY + arrowWidthVector.y    - arrowHeightVector.y };
     outPoints[4] = { arrowTipX                      - arrowHeightVector.x   , arrowTipY                         - arrowHeightVector.y };
     outPoints[5] = { arrowEndX - arrowWidthVector.x - arrowHeightVector.x   , arrowEndY - arrowWidthVector.y    - arrowHeightVector.y };
+}
+
+void TransitionCondition::SetOperatorFromString(std::string const & op)
+{
+    const char* str = op.c_str();
+    if (strcmp(str, OPERATOR_EQUAL))
+    {
+        m_conditionType = EQUAL;
+    }
+    else if (strcmp(str, OPERATOR_NOT_EQUAL))
+    {
+        m_conditionType = NOT_EQUAL;
+    }
+    else if (strcmp(str, OPERATOR_GREATER))
+    {
+        m_conditionType = GREATER;
+    }
+    else if (strcmp(str, OPERATOR_GREATER_EQUAL))
+    {
+        m_conditionType = GREATER_EQUAL;
+    }
+    else if (strcmp(str, OPERATOR_LESS))
+    {
+        m_conditionType = LESS;
+    }
+    else if (strcmp(str, OPERATOR_LESS_EQUAL))
+    {
+        m_conditionType = LESS_EQUAL;
+    }
+}
+
+void TransitionCondition::SetVariableTypeFromString(std::string const & type)
+{
+    const char* str = type.c_str();
+    if (strcmp(str, CONDITION_OP_INT))
+    {
+        m_expectedType = TYPE_INT;
+    }
+    else if (strcmp(str, CONDITION_OP_FLOAT))
+    {
+        m_expectedType = TYPE_FLOAT;
+    }
+    else if (strcmp(str, CONDITION_OP_BOOL) || strcmp(str, CONDITION_BOOLEAN))
+    {
+        m_expectedType = TYPE_BOOL;
+    }
 }

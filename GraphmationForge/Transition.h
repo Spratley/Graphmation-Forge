@@ -13,16 +13,14 @@ enum VariableType
     TYPE_INT
 };
 
-enum ConditionType
+enum OperatorType
 {
     EQUAL,
     NOT_EQUAL,
     LESS,
     LESS_EQUAL,
     GREATER,
-    GREATER_EQUAL,
-    IS_TRUE,
-    IS_FALSE
+    GREATER_EQUAL
 };
 
 union Variable
@@ -34,9 +32,12 @@ union Variable
 
 struct TransitionCondition
 {
+    void SetOperatorFromString(std::string const& op);
+    void SetVariableTypeFromString(std::string const& type);
+
     std::wstring m_variableName;
     VariableType m_expectedType;
-    ConditionType m_conditionType;
+    OperatorType m_conditionType;
     Variable m_value;
 };
 
@@ -46,6 +47,9 @@ public:
     Transition(HWND const parentWindowHandle);
 
     // Properties
+    void SetName(std::wstring const& name) { m_name = name; }
+    std::wstring const& GetName() const { return m_name; }
+
     std::vector<TransitionCondition>& GetConditions() { return m_conditions; }
     std::vector<TransitionCondition> const& GetConditions() const { return m_conditions; }
 

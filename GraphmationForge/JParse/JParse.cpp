@@ -265,10 +265,18 @@ namespace JParse
             outContents += ",\n";
         }
 
-        // Overwrite comma (Since there shouldn't be one on the last item)
-        outContents[outContents.size() - 2] = ' ';
+        if (m_contents.size() > 0)
+        {
+            // Overwrite comma (Since there shouldn't be one on the last item)
+            outContents[outContents.size() - 2] = ' ';
+        }
         tabLevel--;
         Append(outContents, "}", tabLevel);
+    }
+
+    void Object::Set(std::string const & name, Item * const item)
+    {
+        m_contents[name] = item;
     }
 
     bool const Object::Has(std::string const & name) const
@@ -292,8 +300,11 @@ namespace JParse
             outContents += ",\n";
         }
 
-        // Overwrite comma (Since there shouldn't be one on the last item)
-        outContents[outContents.size() - 2] = ' ';
+        if (m_contents.size() > 0)
+        {
+            // Overwrite comma (Since there shouldn't be one on the last item)
+            outContents[outContents.size() - 2] = ' ';
+        }
         tabLevel--;
         Append(outContents, "]", tabLevel);
     }

@@ -131,6 +131,9 @@ int GraphmationForgeApp::OnWindowCommand(WIN32_CALLBACK_PARAMS)
     case IDM_OPEN:
         OpenFile();
         break;
+    case IDM_SAVE_AS:
+        SaveAsFile();
+        break;
     case IDM_INSERT_ANIMSTATE:
         CreateNode();
         break;
@@ -434,6 +437,22 @@ bool GraphmationForgeApp::OpenFile()
     return LoadJSON(StringConvert::ToStr(path));
 }
 
+bool GraphmationForgeApp::SaveAsFile()
+{
+    LPCTSTR filter = L"Animation Graph (*.animgraph)|*.animgraph|";
+    CFileDialog dlgFile(FALSE, _T("animgraph"), L"New Animgraph", OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT, filter, CWnd::FromHandle(m_mainWindowHandle));
+
+    if (dlgFile.DoModal() != IDOK)
+    {
+        return false;
+    }
+
+    CString pathCStr(dlgFile.GetPathName().GetString());
+    std::wstring path(pathCStr);
+
+    return SaveJSON(StringConvert::ToStr(path));
+}
+
 bool GraphmationForgeApp::LoadJSON(std::string filepath)
 {
     JParse::Root json;
@@ -448,12 +467,17 @@ bool GraphmationForgeApp::LoadJSON(std::string filepath)
         JParse::Object* stateObject = state->GetAs<JParse::Object>();
         // Load state data
         std::string nodeName = TRY_PARSE(stateObject, STATE_NAME, JParse::String, "New State");
+        std::string animName = TRY_PARSE(stateObject, STATE_ANIM_NAME, JParse::String, "NULL");
         bool loop = TRY_PARSE(stateObject, STATE_LOOP, JParse::Boolean, false);
+        int posX = TRY_PARSE(stateObject, STATE_POS_X, JParse::Integer, 0);
+        int posY = TRY_PARSE(stateObject, STATE_POS_Y, JParse::Integer, 0);
 
         // Apply data to node
         Node* stateNode = CreateNode();
         stateNode->SetNodeName(StringConvert::ToWStr(nodeName));
+        stateNode->SetAnimationName(StringConvert::ToWStr(animName));
         stateNode->SetLoop(loop);
+        stateNode->SetPosition({ posX, posY });
     }
 
     // Load transitions (Loop through states, use int iterator to index m_nodes array)
@@ -481,23 +505,91 @@ bool GraphmationForgeApp::LoadJSON(std::string filepath)
                 continue;
             }
 
-            Transition* transition = CreateTransition(i, toStateID);
+            Transition* transitionData = CreateTransition(i, toStateID);
 
-            if (transition == nullptr)
+            if (transitionData == nullptr)
             {
                 continue;
             }
 
             // Load conditions
+            JParse::Object* referencedTransition = transitions->m_contents[transitionID]->GetAs<JParse::Object>();
+            std::string transitionName = TRY_PARSE(referencedTransition, TRANSITION_NAME, JParse::String, "New Transition");
+            transitionData->SetName(StringConvert::ToWStr(transitionName));
+
+            JParse::Array* conditions = referencedTransition->TryGet<JParse::Array>(TRANSITION_CONDITIONS);
+            if (!conditions)
+            {
+                continue;
+            }
+
+            for (JParse::Item* condition : conditions->m_contents)
+            {
+                JParse::Object* conditionObject = condition->GetAs<JParse::Object>();
+                std::string variableName = TRY_PARSE(conditionObject, CONDITION_VARIABLE_NAME, JParse::String, "NULL");
+                std::string expectedType = TRY_PARSE(conditionObject, CONDITION_TYPE, JParse::String, "NULL");
+                std::string expectedOperator = TRY_PARSE(conditionObject, CONDITION_OPERATION, JParse::String, "NULL");
+
+                TransitionCondition conditionData;
+                conditionData.m_variableName = StringConvert::ToWStr(variableName);
+                conditionData.SetVariableTypeFromString(expectedType);
+                conditionData.SetOperatorFromString(expectedOperator);
+
+                Variable v;
+                switch (conditionData.m_expectedType)
+                {
+                default:
+                case TYPE_INT:
+                    v.m_int = TRY_PARSE(conditionObject, CONDITION_VALUE, JParse::Integer, 0);
+                    break;
+                case TYPE_FLOAT:
+                    v.m_float = TRY_PARSE(conditionObject, CONDITION_VALUE, JParse::Float, 0.0f);
+                    break;
+                case TYPE_BOOL:
+                    v.m_bool = TRY_PARSE(conditionObject, CONDITION_VALUE, JParse::Boolean, false);
+                    break;
+                }
+                conditionData.m_value = v;
+
+                transitionData->GetConditions().push_back(conditionData);
+            }
         }
     }
 
+    // Invalidate screen to ensure a full refresh
+    RECT clientRect;
+    GetClientRect(m_mainWindowHandle, &clientRect);
+    InvalidateRect(m_mainWindowHandle, &clientRect, true);
     return true;
 }
 
-bool GraphmationForgeApp::SaveJSON()
+bool GraphmationForgeApp::SaveJSON(std::string const& path)
 {
-    return false;
+    // Build JSON
+    JParse::Root json;
+    JParse::Object* rootObject = new JParse::Object;
+    json.m_item = rootObject;
+
+    JParse::Array* transitionsArray = new JParse::Array;
+    JParse::Array* statesArray = new JParse::Array;
+    rootObject->m_contents[TRANSITIONS_ROOT] = transitionsArray;
+    rootObject->m_contents[STATES_ROOT] = statesArray;
+
+    // Build state array
+    for (Node* state : m_nodes)
+    {
+        JParse::Object* stateObject = new JParse::Object;
+        statesArray->Add(stateObject);
+
+        SET_DATA(stateObject, STATE_NAME, JParse::String, StringConvert::ToStr(state->GetNodeName()));
+        SET_DATA(stateObject, STATE_ANIM_NAME, JParse::String, StringConvert::ToStr(state->GetAnimationName()));
+        SET_DATA(stateObject, STATE_LOOP, JParse::Boolean, state->GetLoop());
+        SET_DATA(stateObject, STATE_POS_X, JParse::Integer, state->GetNodePosition().x);
+        SET_DATA(stateObject, STATE_POS_Y, JParse::Integer, state->GetNodePosition().y);
+    }
+
+    json.SaveToFile(path);
+    return true;
 }
 
 bool GraphmationForgeApp::TryUnloadGraph()
@@ -628,6 +720,25 @@ void GraphmationForgeApp::InvalidateAttachedTransitions(std::vector<ISelectable*
         }
     }
 
+}
+
+bool const GraphmationForgeApp::AreNodesTwoWayConnected(Node const* const nodeA, Node const* const nodeB)
+{
+    bool aToB = false;
+    bool bToA = false;
+    for (Transition* transition : m_transitions)
+    {
+        if (transition->GetFromNode() == nodeA && transition->GetToNode() == nodeB)
+        {
+            aToB = true;
+        }
+        else if (transition->GetFromNode() == nodeB && transition->GetToNode() == nodeA)
+        {
+            bToA = true;
+        }
+    }
+
+    return aToB && bToA;
 }
 
 void GraphmationForgeApp::LoadStringResource(int resourceID)

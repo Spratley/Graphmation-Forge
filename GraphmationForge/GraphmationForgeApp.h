@@ -49,6 +49,7 @@ public:
     Transition* const CreateTransition(Node* const fromNode, Node* const toNode);
 
     void InvalidateAttachedTransitions(std::vector<ISelectable*> const& selectedObjects);
+    bool const AreNodesTwoWayConnected(Node const* const nodeA, Node const* const nodeB);
     
 private:
     void LoadStringResource(int resourceID);
@@ -70,9 +71,10 @@ private:
 
     // File IO
     bool OpenFile();
+    bool SaveAsFile();
 
     bool LoadJSON(std::string filepath);
-    bool SaveJSON();
+    bool SaveJSON(std::string const& filepath);
     bool TryUnloadGraph();
 
 private:
