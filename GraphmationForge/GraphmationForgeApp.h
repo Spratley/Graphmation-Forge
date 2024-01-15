@@ -4,11 +4,10 @@
 #include "GraphmationForge.h"
 #include "GraphDrawer.h"
 #include "Timer.h"
+#include "PropertiesWindow.h"
 
 #include <unordered_map>
 #include <vector>
-
-#define WIN32_CALLBACK_PARAMS HWND const hWnd, UINT const message, WPARAM const wParam, LPARAM const lParam
 
 class ISelectable;
 class Node;
@@ -33,6 +32,8 @@ public:
     int OnLeftMouseButtonUp(WIN32_CALLBACK_PARAMS);
     int OnMouseMoved(WIN32_CALLBACK_PARAMS);
     int OnOpenContextMenu(WIN32_CALLBACK_PARAMS);
+    int OnWindowResize(WIN32_CALLBACK_PARAMS);
+    int OnWindowClosed(WIN32_CALLBACK_PARAMS);
 
     void SetInstanceHandle(HINSTANCE const instanceHandle) { m_instanceHandle = instanceHandle; }
     bool InitInstance(int cmdShow);
@@ -50,6 +51,9 @@ public:
 
     void InvalidateAttachedTransitions(std::vector<ISelectable*> const& selectedObjects);
     bool const AreNodesTwoWayConnected(Node const* const nodeA, Node const* const nodeB);
+    std::vector<Transition*> GetTransitionsAttachedFromNode(Node const* const node);
+
+    int const GetStateID(Node const* const node) const; 
     
 private:
     void LoadStringResource(int resourceID);
@@ -71,6 +75,7 @@ private:
 
     // File IO
     bool OpenFile();
+    bool SaveFile();
     bool SaveAsFile();
 
     bool LoadJSON(std::string filepath);
@@ -81,6 +86,8 @@ private:
     // Win32
     HINSTANCE m_instanceHandle;
     HWND m_mainWindowHandle;
+
+    PropertiesWindow m_propertiesWindow;
 
     std::unordered_map<int, WCHAR[MAX_LOADSTRING]> m_stringResources;
 
@@ -95,7 +102,7 @@ private:
     std::vector<ISelectable*> m_selectedObjects;
 
     // File System
-    std::string m_loadedFilepath;
+    std::string m_loadedFilepath = "";
     bool m_containsUnsavedChanges = false;
 
     // Temp?

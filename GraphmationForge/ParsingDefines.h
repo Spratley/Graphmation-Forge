@@ -36,3 +36,7 @@
 #define SET_DATA(object, name, type, value) {type * outValue = new type ; \
 outValue ->m_value = value ;\
 object ->Set( name , outValue );}
+
+#define ADD_DATA(object, name, type, value) {type * outValue = new type ;} \
+outValue ->m_value = value ;\
+object ->Add( name , outValue );}

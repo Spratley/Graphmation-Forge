@@ -81,6 +81,9 @@
     <ClInclude Include="StringConvert.h">
       <Filter>Header Files\Application</Filter>
     </ClInclude>
+    <ClInclude Include="PropertiesWindow.h">
+      <Filter>Header Files\Application</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="GraphmationForge.rc">
@@ -124,6 +127,9 @@
       <Filter>Source Files\JParse</Filter>
     </ClCompile>
     <ClCompile Include="StringConvert.cpp">
+      <Filter>Source Files\Application</Filter>
+    </ClCompile>
+    <ClCompile Include="PropertiesWindow.cpp">
       <Filter>Source Files\Application</Filter>
     </ClCompile>
   </ItemGroup>

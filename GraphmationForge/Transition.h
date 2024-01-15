@@ -1,6 +1,7 @@
 #pragma once
 
 #include "ISelectable.h"
+
 #include <string>
 #include <vector>
 
@@ -30,10 +31,24 @@ union Variable
     bool m_bool;
 };
 
+namespace JParse
+{
+    struct Object;
+}
+
 struct TransitionCondition
 {
     void SetOperatorFromString(std::string const& op);
     void SetVariableTypeFromString(std::string const& type);
+    bool const IsEqual(TransitionCondition const& other) const;
+
+    void BuildJSON(JParse::Object* container) const;
+    bool const ShouldSerializeOperation() const;
+    bool const ShouldSerializeValue() const;
+
+    std::string const GetVariableNameStr() const;
+    std::string const GetConditionTypeStr() const;
+    std::string const GetOperatorTypeStr() const;
 
     std::wstring m_variableName;
     VariableType m_expectedType;
@@ -64,6 +79,8 @@ public:
     HRGN const& GetPaintRegion() override;
 
     void Paint(HDC hdc, HBRUSH fillColor);
+
+    bool const HasSameConditions(Transition* transition) const;
     
 private:
     void UpdateRegion();

@@ -8,6 +8,8 @@
 #include "JParse/JParse.h"
 #include "ParsingDefines.h"
 
+#include "resource.h"
+
 #include <windowsx.h>
 
 GraphmationForgeApp* GraphmationForgeApp::s_instance;
@@ -19,7 +21,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     int retValue = -1;
     switch (message)
     {
-    case WM_CREATE:
+    case WM_SHOWWINDOW: // HACK, postpone message to on window show
         retValue = instance->OnWindowCreated(hWnd, message, wParam, lParam);
         break;
     case WM_ERASEBKGND:
@@ -43,10 +45,12 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     case WM_CONTEXTMENU:
         retValue = instance->OnOpenContextMenu(hWnd, message, wParam, lParam);
         break;
-    case WM_DESTROY:
-        // TODO: CHECK FOR UNSAVED DOCUMENT
-        PostQuitMessage(0);
-        return 0;
+    case WM_SIZE:
+        retValue = instance->OnWindowResize(hWnd, message, wParam, lParam);
+        break;
+    case WM_CLOSE:
+        retValue = instance->OnWindowClosed(hWnd, message, wParam, lParam);
+        break;
     }
 
     if (retValue == -1)
@@ -70,6 +74,7 @@ int GraphmationForgeApp::OnWindowCreated(WIN32_CALLBACK_PARAMS)
 {
     if (hWnd == m_mainWindowHandle)
     {
+        // We're creating the main window
         OnMainWindowCreated(hWnd, message, wParam, lParam);
         return 0;
     }
@@ -112,6 +117,8 @@ int GraphmationForgeApp::OnWindowPaint(WIN32_CALLBACK_PARAMS)
     case ID_CLASS_NODE:
         PaintNode(hWnd, message, wParam, lParam);
         break;
+    case ID_CLASS_PROPERTIES_PANEL:
+        m_propertiesWindow.Paint(hWnd, message, wParam, lParam);
     default:
         return -1;
     }
@@ -126,10 +133,16 @@ int GraphmationForgeApp::OnWindowCommand(WIN32_CALLBACK_PARAMS)
     switch (commandID)
     {
     case IDM_EXIT:
-        DestroyWindow(hWnd);
+        if (TryUnloadGraph())
+        {
+            DestroyWindow(hWnd);
+        }
         break;
     case IDM_OPEN:
         OpenFile();
+        break;
+    case IDM_SAVE:
+        SaveFile();
         break;
     case IDM_SAVE_AS:
         SaveAsFile();
@@ -142,6 +155,9 @@ int GraphmationForgeApp::OnWindowCommand(WIN32_CALLBACK_PARAMS)
         break;
     case ID_CONTEXT_CREATE_TRANSITION:
 
+        break;
+    case ID_COMMAND_EDIT:
+        m_propertiesWindow.PropagatePropertyValues();
         break;
     default:
         return -1;
@@ -223,11 +239,10 @@ int GraphmationForgeApp::OnLeftMouseButtonDown(WIN32_CALLBACK_PARAMS)
 
 int GraphmationForgeApp::OnLeftMouseButtonUp(WIN32_CALLBACK_PARAMS)
 {
-    // if (hWnd != m_mainWindowHandle)
-    // {
-    //     // Only interpret mouse button up for the main window
-    //     return -1;
-    // }
+    if (m_isDragging)
+    {
+        m_containsUnsavedChanges = true;
+    }
 
     m_isDragging = false;
     return 0;
@@ -309,6 +324,31 @@ int GraphmationForgeApp::OnOpenContextMenu(WIN32_CALLBACK_PARAMS)
     return -1;
 }
 
+int GraphmationForgeApp::OnWindowResize(WIN32_CALLBACK_PARAMS)
+{
+    if (hWnd == m_mainWindowHandle)
+    {
+        m_propertiesWindow.UpdatePropertiesWindowSize();
+    }
+
+    return 0;
+}
+
+int GraphmationForgeApp::OnWindowClosed(WIN32_CALLBACK_PARAMS)
+{
+    if (hWnd != m_mainWindowHandle)
+    {
+        return -1;
+    }
+
+    if (TryUnloadGraph())
+    {
+        PostQuitMessage(0);
+        return 0;
+    }
+    return 1;
+}
+
 ATOM GraphmationForgeApp::RegisterWindowClass(LPCWSTR className, HBRUSH backgroundBrush)
 {
     WNDCLASSEXW wcex;
@@ -333,6 +373,15 @@ ATOM GraphmationForgeApp::RegisterWindowClass(LPCWSTR className, HBRUSH backgrou
 void GraphmationForgeApp::OnMainWindowCreated(WIN32_CALLBACK_PARAMS)
 {
     // Create all default sub-windows
+    HWND propertiesWindowHandle =
+        CreateWindow(m_stringResources[ID_CLASS_PROPERTIES_PANEL],
+            L"Properties",
+            WS_CHILD | WS_VISIBLE,
+            0, 0, 0, 0,
+            m_mainWindowHandle,
+            (HMENU)ID_CLASS_PROPERTIES_PANEL, NULL, NULL);
+
+    m_propertiesWindow = PropertiesWindow(propertiesWindowHandle, m_mainWindowHandle);
 }
 
 void GraphmationForgeApp::PaintMainWindow(WIN32_CALLBACK_PARAMS)
@@ -417,11 +466,6 @@ void GraphmationForgeApp::DeselectAll()
 
 bool GraphmationForgeApp::OpenFile()
 {
-    if (!TryUnloadGraph())
-    {
-        return false;
-    }
-
     LPCTSTR filter = L"Animation Graph (*.animgraph)|*.animgraph|";
 
     CFileDialog dlgFile(TRUE, _T("animgraph"), NULL, OFN_HIDEREADONLY | OFN_FILEMUSTEXIST, filter, CWnd::FromHandle(m_mainWindowHandle));
@@ -434,7 +478,28 @@ bool GraphmationForgeApp::OpenFile()
     CString pathCStr(dlgFile.GetPathName().GetString());
     std::wstring path(pathCStr);
 
+    if (path == L"")
+    {
+        return false;
+    }
+
+    if (!TryUnloadGraph())
+    {
+        return false;
+    }
+
     return LoadJSON(StringConvert::ToStr(path));
+}
+
+bool GraphmationForgeApp::SaveFile()
+{
+    if (m_loadedFilepath == "")
+    {
+        return SaveAsFile();
+    }
+
+    SaveJSON(m_loadedFilepath);
+    return false;
 }
 
 bool GraphmationForgeApp::SaveAsFile()
@@ -450,7 +515,8 @@ bool GraphmationForgeApp::SaveAsFile()
     CString pathCStr(dlgFile.GetPathName().GetString());
     std::wstring path(pathCStr);
 
-    return SaveJSON(StringConvert::ToStr(path));
+    m_loadedFilepath = StringConvert::ToStr(path);
+    return SaveJSON(m_loadedFilepath);
 }
 
 bool GraphmationForgeApp::LoadJSON(std::string filepath)
@@ -531,25 +597,35 @@ bool GraphmationForgeApp::LoadJSON(std::string filepath)
                 std::string expectedOperator = TRY_PARSE(conditionObject, CONDITION_OPERATION, JParse::String, "NULL");
 
                 TransitionCondition conditionData;
-                conditionData.m_variableName = StringConvert::ToWStr(variableName);
-                conditionData.SetVariableTypeFromString(expectedType);
-                conditionData.SetOperatorFromString(expectedOperator);
 
-                Variable v;
-                switch (conditionData.m_expectedType)
+                conditionData.m_variableName = StringConvert::ToWStr(variableName);
+                if (strcmp(expectedType.c_str(), "Boolean") == 0)
                 {
-                default:
-                case TYPE_INT:
-                    v.m_int = TRY_PARSE(conditionObject, CONDITION_VALUE, JParse::Integer, 0);
-                    break;
-                case TYPE_FLOAT:
-                    v.m_float = TRY_PARSE(conditionObject, CONDITION_VALUE, JParse::Float, 0.0f);
-                    break;
-                case TYPE_BOOL:
-                    v.m_bool = TRY_PARSE(conditionObject, CONDITION_VALUE, JParse::Boolean, false);
-                    break;
+                    conditionData.m_conditionType == OperatorType::EQUAL;
+                    conditionData.m_expectedType == TYPE_BOOL;
+                    conditionData.m_value.m_bool = true;
                 }
-                conditionData.m_value = v;
+                else
+                {
+                    conditionData.SetVariableTypeFromString(expectedType);
+                    conditionData.SetOperatorFromString(expectedOperator);
+
+                    Variable v;
+                    switch (conditionData.m_expectedType)
+                    {
+                    default:
+                    case TYPE_INT:
+                        v.m_int = TRY_PARSE(conditionObject, CONDITION_VALUE, JParse::Integer, 0);
+                        break;
+                    case TYPE_FLOAT:
+                        v.m_float = TRY_PARSE(conditionObject, CONDITION_VALUE, JParse::Float, 0.0f);
+                        break;
+                    case TYPE_BOOL:
+                        v.m_bool = TRY_PARSE(conditionObject, CONDITION_VALUE, JParse::Boolean, false);
+                        break;
+                    }
+                    conditionData.m_value = v;
+                }
 
                 transitionData->GetConditions().push_back(conditionData);
             }
@@ -558,11 +634,14 @@ bool GraphmationForgeApp::LoadJSON(std::string filepath)
 
     // Invalidate screen to ensure a full refresh
     RECT clientRect;
+    m_containsUnsavedChanges = false;
     GetClientRect(m_mainWindowHandle, &clientRect);
     InvalidateRect(m_mainWindowHandle, &clientRect, true);
     return true;
 }
 
+// Ideally this would be better
+// But I just want to get this project done tbh
 bool GraphmationForgeApp::SaveJSON(std::string const& path)
 {
     // Build JSON
@@ -570,13 +649,14 @@ bool GraphmationForgeApp::SaveJSON(std::string const& path)
     JParse::Object* rootObject = new JParse::Object;
     json.m_item = rootObject;
 
-    JParse::Array* transitionsArray = new JParse::Array;
     JParse::Array* statesArray = new JParse::Array;
-    rootObject->m_contents[TRANSITIONS_ROOT] = transitionsArray;
     rootObject->m_contents[STATES_ROOT] = statesArray;
 
+    // Allow us to use duplicate transitions
+    std::vector<Transition*> transitionsToSerialize;
+
     // Build state array
-    for (Node* state : m_nodes)
+    for (Node const* const state : m_nodes)
     {
         JParse::Object* stateObject = new JParse::Object;
         statesArray->Add(stateObject);
@@ -586,16 +666,121 @@ bool GraphmationForgeApp::SaveJSON(std::string const& path)
         SET_DATA(stateObject, STATE_LOOP, JParse::Boolean, state->GetLoop());
         SET_DATA(stateObject, STATE_POS_X, JParse::Integer, state->GetNodePosition().x);
         SET_DATA(stateObject, STATE_POS_Y, JParse::Integer, state->GetNodePosition().y);
+
+        // Build transition reference array
+        JParse::Array* transitionsFromState = new JParse::Array;
+
+        std::vector<Transition*> transitionDataFromState = GetTransitionsAttachedFromNode(state);
+        for (Transition* transitionData : transitionDataFromState)
+        {
+            JParse::Object* transitionObject = new JParse::Object;
+            transitionsFromState->Add(transitionObject);
+
+            int const stateID = GetStateID(transitionData->GetToNode());
+            SET_DATA(transitionObject, STATE_TRANSITION_STATE, JParse::Integer, stateID);
+
+            // Check if we have already tracked a transition with the same conditions, if so then just register a reference to that
+            // Otherwise, add this to the list and track it
+            bool foundTransitionToReuse = false;
+            for (int i = 0; i < transitionsToSerialize.size(); i++)
+            {
+                if (transitionData->HasSameConditions(transitionsToSerialize[i]))
+                {
+                    SET_DATA(transitionObject, STATE_TRANSITION_TRANSITION_ID, JParse::Integer, i);
+                    foundTransitionToReuse = true;
+                    break;
+                }
+            }
+
+            if (!foundTransitionToReuse)
+            {
+                SET_DATA(transitionObject, STATE_TRANSITION_TRANSITION_ID, JParse::Integer, transitionsToSerialize.size());
+                transitionsToSerialize.push_back(transitionData);
+            }
+        }
+
+        stateObject->Set(TRANSITIONS_ROOT, transitionsFromState);
+    }
+
+    JParse::Array* transitionsArray = new JParse::Array;
+    rootObject->m_contents[TRANSITIONS_ROOT] = transitionsArray;
+    // Build transitions array
+    for (Transition const* const transition : transitionsToSerialize)
+    {
+        JParse::Object* transitionObject = new JParse::Object;
+        transitionsArray->Add(transitionObject);
+
+        SET_DATA(transitionObject, TRANSITION_NAME, JParse::String, StringConvert::ToStr(transition->GetName()));
+
+        // Build conditions array
+        JParse::Array* conditionsArray = new JParse::Array;
+        transitionObject->Set(TRANSITION_CONDITIONS, conditionsArray);
+        for (TransitionCondition const& condition : transition->GetConditions())
+        {
+            JParse::Object* conditionObject = new JParse::Object;
+            condition.BuildJSON(conditionObject);
+            conditionsArray->Add(conditionObject);
+        }
+
+        transitionObject->Set(TRANSITION_CONDITIONS, conditionsArray);
     }
 
     json.SaveToFile(path);
+
+    m_containsUnsavedChanges = false;
+
+    int msgboxID = MessageBox(
+        NULL,
+        L"Saved successfully!",
+        L"Save Success",
+        MB_ICONINFORMATION | MB_OK
+    );
+
     return true;
 }
 
 bool GraphmationForgeApp::TryUnloadGraph()
 {
-    return !m_containsUnsavedChanges;
-    return false;
+    if (m_containsUnsavedChanges)
+    {
+        int msgboxID = MessageBox(
+            NULL,
+            L"Warning, unsaved changes will be discarded! Save changes before closing graph?",
+            L"Discarding Changes",
+            MB_ICONWARNING | MB_YESNOCANCEL
+        );
+
+        if (msgboxID == IDYES)
+        {
+            SaveFile();
+        }
+        else if (msgboxID == IDCANCEL)
+        {
+            return false;
+        }
+    }
+
+    // Unload graph
+    for (Node* node : m_nodes)
+    {
+        delete node;
+    }
+    m_nodes.clear();
+
+    for (Transition* transition : m_transitions)
+    {
+        delete transition;
+    }
+    m_transitions.clear();
+
+    m_potentialSelectable = nullptr;
+    m_selectedObjects.clear();
+
+    m_loadedFilepath = "";
+    m_containsUnsavedChanges = false;
+
+    m_isDragging = false;
+    return true;
 }
 
 bool GraphmationForgeApp::InitInstance(int cmdShow)
@@ -619,6 +804,7 @@ void GraphmationForgeApp::LoadStringResources()
     LoadStringResource(IDS_APP_TITLE);
     LoadStringResource(IDC_GRAPHMATIONFORGE);
     LoadStringResource(ID_CLASS_NODE);
+    LoadStringResource(ID_CLASS_PROPERTIES_PANEL);
 }
 
 void GraphmationForgeApp::CreateBrushPalette()
@@ -639,6 +825,7 @@ void GraphmationForgeApp::RegisterWindowClasses()
 {
     RegisterWindowClass(m_stringResources[IDC_GRAPHMATIONFORGE], m_brushes[ID_COLOR_BG]); // Main window
     RegisterWindowClass(m_stringResources[ID_CLASS_NODE], m_brushes[ID_COLOR_NODE_DESELECTED]);
+    RegisterWindowClass(m_stringResources[ID_CLASS_PROPERTIES_PANEL], m_brushes[ID_COLOR_NODE_HIGHLIGHTED]);
 }
 
 Node* const GraphmationForgeApp::CreateNode()
@@ -660,6 +847,8 @@ Node* const GraphmationForgeApp::CreateNode()
     p.x = 10;
     p.y = 10;
     node->SetPosition(p);
+
+    m_containsUnsavedChanges = true;
 
     return node;
 }
@@ -692,6 +881,8 @@ Transition * const GraphmationForgeApp::CreateTransition(Node * const fromNode, 
     transition->InvalidatePaintArea();
 
     m_transitions.push_back(transition);
+
+    m_containsUnsavedChanges = true;
     return transition;
 }
 
@@ -739,6 +930,32 @@ bool const GraphmationForgeApp::AreNodesTwoWayConnected(Node const* const nodeA,
     }
 
     return aToB && bToA;
+}
+
+std::vector<Transition*> GraphmationForgeApp::GetTransitionsAttachedFromNode(Node const * const node)
+{
+    std::vector<Transition*> transitions;
+    for (Transition* const transition : m_transitions)
+    {
+        if (transition->GetFromNode() == node)
+        {
+            transitions.push_back(transition);
+        }
+    }
+    return transitions;
+}
+
+int const GraphmationForgeApp::GetStateID(Node const * const node) const
+{
+    for (int i = 0; i < m_nodes.size(); i++)
+    {
+        if (node == m_nodes[i])
+        {
+            return i;
+        }
+    }
+
+    return -1;
 }
 
 void GraphmationForgeApp::LoadStringResource(int resourceID)

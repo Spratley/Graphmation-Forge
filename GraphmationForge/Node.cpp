@@ -10,6 +10,11 @@ Node::Node(HWND const parentWindowHandle, HWND const windowHandle)
     m_paintRegion = CreateRectRgn(0, 0, NODE_WIDTH, NODE_HEIGHT);
 }
 
+Node::~Node()
+{
+    DestroyWindow(m_windowHandle);
+}
+
 void Node::SetPosition(POINT const& p)
 {
     InvalidatePaintArea();

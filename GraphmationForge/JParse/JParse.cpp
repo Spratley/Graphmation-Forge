@@ -22,9 +22,10 @@ namespace JParse
         }
 
         // Remaining tokens must be an int or a float
-        size_t delim = contents.find(',');
-        delim = std::min(delim, contents.find('}'));
-        std::string token = contents.substr(0, delim);
+        std::string remainingParsable = contents.substr(offset);
+        size_t delim = remainingParsable.find(',');
+        delim = std::min(delim, remainingParsable.find('}'));
+        std::string token = remainingParsable.substr(0, delim);
         if (token.find('.') != std::string::npos)
         {
             return new Float;

@@ -9,6 +9,7 @@ class Node : public ISelectable
 {
 public:
     Node(HWND const parentWindowHandle, HWND const windowHandle);
+    ~Node();
 
     void SetPosition(POINT const& p);
     void SetNodeName(std::wstring const& name);
