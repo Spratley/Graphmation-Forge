@@ -7,6 +7,7 @@
 #include "PropertiesWindow.h"
 
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 class ISelectable;
@@ -49,7 +50,7 @@ public:
     Transition* const CreateTransition(unsigned int const fromNodeID, unsigned int const toNodeID);
     Transition* const CreateTransition(Node* const fromNode, Node* const toNode);
 
-    void InvalidateAttachedTransitions(std::vector<ISelectable*> const& selectedObjects);
+    void InvalidateAttachedTransitions(std::unordered_set<ISelectable*> const& selectedObjects);
     bool const AreNodesTwoWayConnected(Node const* const nodeA, Node const* const nodeB);
     std::vector<Transition*> GetTransitionsAttachedFromNode(Node const* const node);
 
@@ -71,7 +72,12 @@ private:
 
     Node* const FindNode(HWND const nodeWindowHandle) const;
 
+    void Select(ISelectable* const selection);
+    bool const Deselect(ISelectable* const selection);
     void DeselectAll();
+    bool const IsSelected(ISelectable* const selection);
+
+    void OnSelectionChanged();
 
     // File IO
     bool OpenFile();
@@ -99,7 +105,7 @@ private:
 
     // The selectable that is currently under the user's mouse
     ISelectable* m_potentialSelectable = nullptr;
-    std::vector<ISelectable*> m_selectedObjects;
+    std::unordered_set<ISelectable*> m_selectedObjects;
 
     // File System
     std::string m_loadedFilepath = "";

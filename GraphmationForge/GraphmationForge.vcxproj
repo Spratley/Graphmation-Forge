@@ -167,6 +167,8 @@
     <ClInclude Include="Node.h" />
     <ClInclude Include="ParsingDefines.h" />
     <ClInclude Include="PropertiesWindow.h" />
+    <ClInclude Include="Property.h" />
+    <ClInclude Include="PropertyContainer.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="SelectionState.h" />
     <ClInclude Include="StringConvert.h" />
@@ -183,6 +185,7 @@
     <ClCompile Include="JParse\JParse.cpp" />
     <ClCompile Include="Node.cpp" />
     <ClCompile Include="PropertiesWindow.cpp" />
+    <ClCompile Include="PropertyContainer.cpp" />
     <ClCompile Include="StringConvert.cpp" />
     <ClCompile Include="Timer.cpp" />
     <ClCompile Include="Transition.cpp" />

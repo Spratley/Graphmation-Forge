@@ -12,15 +12,9 @@ public:
     ~Node();
 
     void SetPosition(POINT const& p);
-    void SetNodeName(std::wstring const& name);
-    void SetAnimationName(std::wstring const& animationName);
-    void SetLoop(bool const loop);
 
     HWND const& GetWindowHandle() const { return m_windowHandle; }
     POINT const& GetNodePosition() const { return m_position; }
-    std::wstring const& GetNodeName() const { return m_nodeName; }
-    std::wstring const& GetAnimationName() const { return m_associatedAnimation; }
-    bool const GetLoop() const { return m_loop; }
 
     bool IsMouseOverlapping(POINT mousePos);
 
@@ -28,6 +22,18 @@ public:
 
     void StartDrag(POINT mousePos);
     void SetDragged(POINT mousePos);
+
+    // Properties    
+    void SetNodeName(std::wstring const& name);
+    void SetAnimationName(std::wstring const& animationName);
+    void SetLoop(bool const loop);
+
+    std::wstring const& GetNodeName() const;
+    std::wstring const& GetAnimationName() const;
+    bool const GetLoop() const;
+
+private:
+    void InitProperties();
 
 private:
     HWND m_windowHandle;
@@ -38,7 +44,13 @@ private:
     POINT m_dragStartPos;
 
     // Properties
-    std::wstring m_nodeName;
-    std::wstring m_associatedAnimation;
-    bool m_loop;
+    // std::wstring m_nodeName;
+    // std::wstring m_associatedAnimation;
+    // bool m_loop;
+    enum
+    {
+        PropertyID_NodeName,
+        PropertyID_AssociatedAnimation,
+        PropertyID_Loop
+    };
 };

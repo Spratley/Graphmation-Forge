@@ -28,11 +28,12 @@ public:
     void PropagatePropertyValues();
 
 private:
-    HWND CreateContent(std::wstring const& label, PropertyType propertyType);
+    HWND CreateContent(std::wstring const& label, PropertyType propertyType, int const verticalOffsets);
 
 private:
     HWND m_parentHandle;
     HWND m_windowHandle;
 
     std::vector<HWND> m_contents;
+    ISelectable* m_selectedObject = nullptr;
 };

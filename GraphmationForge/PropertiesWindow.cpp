@@ -9,7 +9,6 @@ PropertiesWindow::PropertiesWindow(HWND hWnd, HWND parentHandle)
 , m_parentHandle(parentHandle)
 {
     UpdatePropertiesWindowSize();
-    SetPropertiesContent(nullptr);
 }
 
 void PropertiesWindow::UpdatePropertiesWindowSize()
@@ -21,12 +20,26 @@ void PropertiesWindow::UpdatePropertiesWindowSize()
 
 void PropertiesWindow::SetPropertiesContent(ISelectable * selectedObject)
 {
-    m_contents.push_back(CreateContent(L"Bruh", TEXT_BOX));
+    m_selectedObject = selectedObject;
+    
+    int contentOffset = 50;
+    std::unordered_map<int, Property*> const& selectedObjectProperties = selectedObject->GetProperties();
+    for (auto const& property : selectedObjectProperties)
+    {
+        CreateContent(L"Test", DROPDOWN, contentOffset);
+        contentOffset += 30;
+    }
 }
 
 void PropertiesWindow::ClearPropertiesContent()
 {
+    m_selectedObject = nullptr;
 
+    for (HWND hWnd : m_contents)
+    {
+        DestroyWindow(hWnd);
+    }
+    m_contents.clear();
 }
 
 void PropertiesWindow::Paint(WIN32_CALLBACK_PARAMS)
@@ -42,15 +55,29 @@ void PropertiesWindow::PropagatePropertyValues()
     // Set the properties of whatever is selected to the values in my content 
 }
 
-HWND PropertiesWindow::CreateContent(std::wstring const & label, PropertyType propertyType)
+HWND PropertiesWindow::CreateContent(std::wstring const & label, PropertyType propertyType, int const verticalOffset)
 {
-    HWND contentWindow =
-        CreateWindow(L"EDIT",
-            L"EditField",
-            WS_CHILD | WS_VISIBLE,
-            10, 0, PROPERTIES_PANEL_WIDTH - 20, 30,
-            m_windowHandle,
-            (HMENU)ID_COMMAND_EDIT, NULL, NULL);
+    HWND contentWindow = NULL;
 
+    if (propertyType == TEXT_BOX)
+    {
+        contentWindow = CreateWindow(WC_EDIT,
+                L"EditField",
+                WS_CHILD | WS_VISIBLE,
+                10, verticalOffset, PROPERTIES_PANEL_WIDTH - 20, 30,
+                m_windowHandle,
+                (HMENU)ID_COMMAND_EDIT, NULL, NULL);
+    }
+    else if (propertyType == DROPDOWN)
+    {
+        contentWindow = CreateWindow(WC_COMBOBOX,
+            L"Dropdown Field",
+            WS_CHILD | WS_VISIBLE | CBS_DROPDOWNLIST | CBS_HASSTRINGS,
+            10, verticalOffset, PROPERTIES_PANEL_WIDTH - 20, 500,
+            m_windowHandle,
+            (HMENU)ID_COMMAND_DROPDOWN, NULL, NULL);
+    }
+    
+    m_contents.push_back(contentWindow);
     return contentWindow;
 }

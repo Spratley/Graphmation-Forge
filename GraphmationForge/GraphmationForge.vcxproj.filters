@@ -84,6 +84,12 @@
     <ClInclude Include="PropertiesWindow.h">
       <Filter>Header Files\Application</Filter>
     </ClInclude>
+    <ClInclude Include="Property.h">
+      <Filter>Header Files\Application</Filter>
+    </ClInclude>
+    <ClInclude Include="PropertyContainer.h">
+      <Filter>Header Files\Application</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="GraphmationForge.rc">
@@ -99,9 +105,6 @@
     </Image>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="GraphmationForgeMain.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="GraphDrawer.cpp">
       <Filter>Source Files\Application</Filter>
     </ClCompile>
@@ -130,6 +133,12 @@
       <Filter>Source Files\Application</Filter>
     </ClCompile>
     <ClCompile Include="PropertiesWindow.cpp">
+      <Filter>Source Files\Application</Filter>
+    </ClCompile>
+    <ClCompile Include="GraphmationForgeMain.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="PropertyContainer.cpp">
       <Filter>Source Files\Application</Filter>
     </ClCompile>
   </ItemGroup>

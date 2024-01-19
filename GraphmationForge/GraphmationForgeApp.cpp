@@ -190,47 +190,43 @@ int GraphmationForgeApp::OnLeftMouseButtonDown(WIN32_CALLBACK_PARAMS)
     {
         for (ISelectable* selectable : m_selectedObjects)
         {
-            // TODO: Don't assume node
-            Node* node = static_cast<Node*>(selectable);
-            node->StartDrag(mousePos);
+            if (Node* node = dynamic_cast<Node*>(selectable))
+            {
+                node->StartDrag(mousePos);
+            }
         }
 
         m_isDragging = true;
     }
     else
     {
-        bool found = false;
-        for(int i = 0; i < m_selectedObjects.size(); i++)
+        // Left click on selectable
+        bool isShiftHeld = wParam & MK_SHIFT;
+        if (isShiftHeld)
         {
-            if (m_selectedObjects[i] == m_potentialSelectable)
+            // Just toggle selection of object
+            if (IsSelected(m_potentialSelectable))
             {
-                // Deselect if holding shift or already selcted, otherwise deselect all others
-                if (wParam & MK_SHIFT || m_potentialSelectable->GetSelectionState() == SELECTED)
-                {
-                    m_potentialSelectable->SetSelectionState(NONE);
-                    m_selectedObjects.erase(m_selectedObjects.begin() + i);
-                    found = true;
-                }
-                else
-                {
-                    DeselectAll();
-                }
-
-
-                break;
+                Deselect(m_potentialSelectable);
+            }
+            else
+            {
+                Select(m_potentialSelectable);
             }
         }
-
-        if (!found)
+        else
         {
-            int shift = wParam & MK_SHIFT;
-            if (!shift)
-            {
-                DeselectAll();
-            }
+            // If we are selected and there are no other selected objects, deselect self.
+            // If we are selected and there ARE other selected objects, select only self.
+            // If we are deselected, select only self
 
-            m_potentialSelectable->SetSelectionState(SELECTED);
-            m_selectedObjects.push_back(m_potentialSelectable);
+            int startingSelectionSize = m_selectedObjects.size();
+            bool potentialSelectableAlreadySelected = IsSelected(m_potentialSelectable);
+            DeselectAll();
+            if (!potentialSelectableAlreadySelected || (potentialSelectableAlreadySelected && startingSelectionSize > 1))
+            {
+                Select(m_potentialSelectable);
+            }
         }
     }
 
@@ -455,6 +451,31 @@ Node * const GraphmationForgeApp::FindNode(HWND const nodeWindowHandle) const
     return nullptr;
 }
 
+void GraphmationForgeApp::Select(ISelectable * const selection)
+{
+    if (IsSelected(selection))
+    {
+        return;
+    }
+
+    selection->SetSelectionState(SELECTED);
+    m_selectedObjects.insert(selection);
+    OnSelectionChanged();
+}
+
+bool const GraphmationForgeApp::Deselect(ISelectable * const selection)
+{
+    if (!IsSelected(selection))
+    {
+        return false;
+    }
+
+    selection->SetSelectionState(NONE);
+    m_selectedObjects.erase(selection);
+    OnSelectionChanged();
+    return true;
+}
+
 void GraphmationForgeApp::DeselectAll()
 {
     for (ISelectable* selectable : m_selectedObjects)
@@ -462,6 +483,24 @@ void GraphmationForgeApp::DeselectAll()
         selectable->SetSelectionState(NONE);
     }
     m_selectedObjects.clear();
+
+    OnSelectionChanged();
+}
+
+bool const GraphmationForgeApp::IsSelected(ISelectable * const selection)
+{
+    return m_selectedObjects.count(selection);
+}
+
+void GraphmationForgeApp::OnSelectionChanged()
+{
+    if (m_selectedObjects.size() == 1)
+    {
+        // Use begin() to get the address of the "first" and only element in the set
+        m_propertiesWindow.SetPropertiesContent(*m_selectedObjects.begin());
+        return;
+    }
+    m_propertiesWindow.ClearPropertiesContent();
 }
 
 bool GraphmationForgeApp::OpenFile()
@@ -601,8 +640,8 @@ bool GraphmationForgeApp::LoadJSON(std::string filepath)
                 conditionData.m_variableName = StringConvert::ToWStr(variableName);
                 if (strcmp(expectedType.c_str(), "Boolean") == 0)
                 {
-                    conditionData.m_conditionType == OperatorType::EQUAL;
-                    conditionData.m_expectedType == TYPE_BOOL;
+                    conditionData.m_conditionType = OperatorType::EQUAL;
+                    conditionData.m_expectedType = TYPE_BOOL;
                     conditionData.m_value.m_bool = true;
                 }
                 else
@@ -682,7 +721,7 @@ bool GraphmationForgeApp::SaveJSON(std::string const& path)
             // Check if we have already tracked a transition with the same conditions, if so then just register a reference to that
             // Otherwise, add this to the list and track it
             bool foundTransitionToReuse = false;
-            for (int i = 0; i < transitionsToSerialize.size(); i++)
+            for (unsigned int i = 0; i < transitionsToSerialize.size(); i++)
             {
                 if (transitionData->HasSameConditions(transitionsToSerialize[i]))
                 {
@@ -886,7 +925,7 @@ Transition * const GraphmationForgeApp::CreateTransition(Node * const fromNode, 
     return transition;
 }
 
-void GraphmationForgeApp::InvalidateAttachedTransitions(std::vector<ISelectable*> const & selectedObjects)
+void GraphmationForgeApp::InvalidateAttachedTransitions(std::unordered_set<ISelectable*> const & selectedObjects)
 {
     std::unordered_map<Transition*, bool> attachedTransitions;
     for (ISelectable* selectable : selectedObjects)
@@ -947,7 +986,7 @@ std::vector<Transition*> GraphmationForgeApp::GetTransitionsAttachedFromNode(Nod
 
 int const GraphmationForgeApp::GetStateID(Node const * const node) const
 {
-    for (int i = 0; i < m_nodes.size(); i++)
+    for (unsigned int i = 0; i < m_nodes.size(); i++)
     {
         if (node == m_nodes[i])
         {

@@ -1,13 +1,14 @@
 #include "Node.h"
 
+#include "Property.h"
+
 Node::Node(HWND const parentWindowHandle, HWND const windowHandle)
 : ISelectable(parentWindowHandle)
 , m_windowHandle(windowHandle)
 , m_position()
-, m_nodeName(L"New Node")
-, m_associatedAnimation(L"")
 {
     m_paintRegion = CreateRectRgn(0, 0, NODE_WIDTH, NODE_HEIGHT);
+    InitProperties();
 }
 
 Node::~Node()
@@ -72,16 +73,38 @@ void Node::SetDragged(POINT mousePos)
 
 void Node::SetAnimationName(std::wstring const & animationName)
 {
-    m_associatedAnimation = animationName;
+    m_properties.GetPropertyPtr<StringProperty>(PropertyID_AssociatedAnimation)->m_value = animationName;
+}
+
+void Node::InitProperties()
+{
+    m_properties.RegisterProperty(new StringProperty(L"New Node"), PropertyID_NodeName);
+    m_properties.RegisterProperty(new StringProperty(L""), PropertyID_AssociatedAnimation);
+    m_properties.RegisterProperty(new BoolProperty(false), PropertyID_Loop);
 }
 
 void Node::SetNodeName(std::wstring const& name)
 {
-    m_nodeName = name;
+    m_properties.GetPropertyPtr<StringProperty>(PropertyID_NodeName)->m_value = name;
     InvalidatePaintArea();
 }
 
 void Node::SetLoop(bool const loop)
 {
-    m_loop = loop;
+    m_properties.GetPropertyPtr<BoolProperty>(PropertyID_Loop)->m_value = loop;
+}
+
+std::wstring const & Node::GetNodeName() const
+{
+    return m_properties.GetPropertyPtr<StringProperty>(PropertyID_NodeName)->m_value;
+}
+
+std::wstring const & Node::GetAnimationName() const
+{
+    return m_properties.GetPropertyPtr<StringProperty>(PropertyID_AssociatedAnimation)->m_value;
+}
+
+bool const Node::GetLoop() const
+{
+    return m_properties.GetPropertyPtr<BoolProperty>(PropertyID_Loop)->m_value;
 }
