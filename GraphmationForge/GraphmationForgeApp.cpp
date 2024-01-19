@@ -173,6 +173,12 @@ int GraphmationForgeApp::OnLeftMouseButtonDown(WIN32_CALLBACK_PARAMS)
     //     return -1;
     // }
 
+    if (hWnd == m_propertiesWindow.GetHWND())
+    {
+        // Don't interpret clicks on the properties panel
+        return -1;
+    }
+
     if (!m_potentialSelectable)
     {
         DeselectAll();

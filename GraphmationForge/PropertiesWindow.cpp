@@ -26,8 +26,25 @@ void PropertiesWindow::SetPropertiesContent(ISelectable * selectedObject)
     std::unordered_map<int, Property*> const& selectedObjectProperties = selectedObject->GetProperties();
     for (auto const& property : selectedObjectProperties)
     {
-        CreateContent(L"Test", DROPDOWN, contentOffset);
+        Property* propertyPtr = property.second;
+        PropertyType propertyType = propertyPtr->GetPropertyType();
+        HWND propertyWindowHandle = CreateContent(L"Property", propertyType, contentOffset);
         contentOffset += 30;
+
+        // Initialize values
+        switch (propertyType)
+        {
+        case DROPDOWN:
+            {
+                // Set potential values in dropdown
+                std::vector <std::wstring> dropdownValues = propertyPtr->GetDropdownItems();
+                for (std::wstring const& dropdownItem : dropdownValues)
+                {
+                    SendMessage(propertyWindowHandle, (UINT)CB_ADDSTRING, (WPARAM)0, (LPARAM)dropdownItem.c_str());
+                }
+            }
+            break;
+        }
     }
 }
 

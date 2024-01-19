@@ -2,15 +2,11 @@
 
 #include "framework.h"
 
+#include "Property.h"
+
 #include <vector>
 
 class ISelectable;
-
-enum PropertyType
-{
-    TEXT_BOX,
-    DROPDOWN
-};
 
 class PropertiesWindow
 {
@@ -26,6 +22,8 @@ public:
     void Paint(WIN32_CALLBACK_PARAMS);
 
     void PropagatePropertyValues();
+
+    HWND const& GetHWND() { return m_windowHandle; }
 
 private:
     HWND CreateContent(std::wstring const& label, PropertyType propertyType, int const verticalOffsets);
