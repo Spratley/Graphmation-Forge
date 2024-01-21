@@ -1,35 +1,15 @@
 #pragma once
 
 #include "ISelectable.h"
+#include "PropertyContainer.h"
+#include "EnumHelper.h"
 
 #include <string>
 #include <vector>
 
 class Node;
 
-enum VariableType
-{
-    TYPE_BOOL,
-    TYPE_FLOAT,
-    TYPE_INT
-};
-
-enum OperatorType
-{
-    EQUAL,
-    NOT_EQUAL,
-    LESS,
-    LESS_EQUAL,
-    GREATER,
-    GREATER_EQUAL
-};
-
-union Variable
-{
-    float m_float;
-    int m_int;
-    bool m_bool;
-};
+union Variable;
 
 namespace JParse
 {
@@ -50,10 +30,32 @@ struct TransitionCondition
     std::string const GetConditionTypeStr() const;
     std::string const GetOperatorTypeStr() const;
 
-    std::wstring m_variableName;
-    VariableType m_expectedType;
-    OperatorType m_conditionType;
-    Variable m_value;
+    void SetVariableName(std::wstring const& name);
+    void SetVariableType(VariableType::Enum const& type);
+    void SetConditionType(OperatorType::Enum const& type);
+    void SetVariable(Variable const& variable);
+
+    std::wstring const& GetVariableName() const;
+    VariableType::Enum const& GetVariableType() const;
+    OperatorType::Enum const& GetConditionType() const;
+    Variable const& GetVariableConst() const;
+    Variable& GetVariable();
+
+    // Properties
+    void InitProperties();
+
+    // std::wstring m_variableName;
+    // VariableType m_expectedType;
+    // OperatorType m_conditionType;
+    // Variable m_value;
+    PropertyContainer m_properties;
+    enum
+    {
+        PropertyID_VariableName,
+        PropertyID_ExpectedType,
+        PropertyID_ConditionType,
+        PropertyID_Variable
+    };
 };
 
 class Transition : public ISelectable
@@ -62,11 +64,11 @@ public:
     Transition(HWND const parentWindowHandle);
 
     // Properties
-    void SetName(std::wstring const& name) { m_name = name; }
-    std::wstring const& GetName() const { return m_name; }
+    void SetName(std::wstring const& name); // { m_name = name; }
+    std::wstring const& GetName() const; // { return m_name; }
 
-    std::vector<TransitionCondition>& GetConditions() { return m_conditions; }
-    std::vector<TransitionCondition> const& GetConditions() const { return m_conditions; }
+    std::vector<TransitionCondition>& GetConditions(); // { return m_conditions; }
+    std::vector<TransitionCondition> const& GetConditions() const; // { return m_conditions; }
 
     void SetFromNode(Node* const from) { m_fromNode = from; }
     void SetToNode(Node* const to) { m_toNode = to; }
@@ -87,6 +89,8 @@ private:
 
     void BuildPointArrow(POINT* outPoints, float directionX, float directionY);
 
+    void InitProperties();
+
 private:
     Node* m_fromNode;
     Node* m_toNode;
@@ -94,6 +98,12 @@ private:
     HRGN m_paintRegion;
 
     // Properties
-    std::wstring m_name;
-    std::vector<TransitionCondition> m_conditions;
+    /// std::wstring m_name;
+    /// std::vector<TransitionCondition> m_conditions;
+
+    enum
+    {
+        PropertyID_TransitionName,
+        PropertyID_Conditions
+    };
 };

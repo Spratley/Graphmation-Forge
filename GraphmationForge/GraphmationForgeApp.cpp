@@ -157,8 +157,16 @@ int GraphmationForgeApp::OnWindowCommand(WIN32_CALLBACK_PARAMS)
 
         break;
     case ID_COMMAND_EDIT:
-        m_propertiesWindow.PropagatePropertyValues();
+        if (HIWORD(wParam) == EN_UPDATE)
+        {
+            m_propertiesWindow.PropagatePropertyValues();
+        }
         break;
+    case ID_COMMAND_DROPDOWN:
+        if (HIWORD(wParam) == CBN_SELCHANGE)
+        {
+            m_propertiesWindow.PropagatePropertyValues();
+        }
     default:
         return -1;
     }
@@ -643,12 +651,12 @@ bool GraphmationForgeApp::LoadJSON(std::string filepath)
 
                 TransitionCondition conditionData;
 
-                conditionData.m_variableName = StringConvert::ToWStr(variableName);
+                conditionData.SetVariableName(StringConvert::ToWStr(variableName));
                 if (strcmp(expectedType.c_str(), "Boolean") == 0)
                 {
-                    conditionData.m_conditionType = OperatorType::EQUAL;
-                    conditionData.m_expectedType = TYPE_BOOL;
-                    conditionData.m_value.m_bool = true;
+                    conditionData.SetConditionType(OperatorType::EQUAL);
+                    conditionData.SetVariableType(VariableType::TYPE_BOOL);
+                    conditionData.GetVariable().m_bool = true;
                 }
                 else
                 {
@@ -656,20 +664,20 @@ bool GraphmationForgeApp::LoadJSON(std::string filepath)
                     conditionData.SetOperatorFromString(expectedOperator);
 
                     Variable v;
-                    switch (conditionData.m_expectedType)
+                    switch (conditionData.GetVariableType())
                     {
                     default:
-                    case TYPE_INT:
+                    case VariableType::TYPE_INT:
                         v.m_int = TRY_PARSE(conditionObject, CONDITION_VALUE, JParse::Integer, 0);
                         break;
-                    case TYPE_FLOAT:
+                    case VariableType::TYPE_FLOAT:
                         v.m_float = TRY_PARSE(conditionObject, CONDITION_VALUE, JParse::Float, 0.0f);
                         break;
-                    case TYPE_BOOL:
+                    case VariableType::TYPE_BOOL:
                         v.m_bool = TRY_PARSE(conditionObject, CONDITION_VALUE, JParse::Boolean, false);
                         break;
                     }
-                    conditionData.m_value = v;
+                    conditionData.SetVariable(v);
                 }
 
                 transitionData->GetConditions().push_back(conditionData);
@@ -879,10 +887,10 @@ Node* const GraphmationForgeApp::CreateNode()
         CreateWindow(m_stringResources[ID_CLASS_NODE],
                      L"Node",
                      WS_CHILD | WS_VISIBLE,
-                     10, 10, NODE_WIDTH, NODE_HEIGHT,
+                     10, 10, NODE_MIN_WIDTH, NODE_HEIGHT,
                      m_mainWindowHandle,
                      (HMENU)ID_CLASS_NODE, NULL, NULL);
-    HRGN region = CreateRoundRectRgn(0, 0, NODE_WIDTH, NODE_HEIGHT, 20, 20);
+    HRGN region = CreateRoundRectRgn(0, 0, NODE_MIN_WIDTH, NODE_HEIGHT, 20, 20);
     SetWindowRgn(nodeWindowHandle, region, true);
 
     Node* node = new Node(m_mainWindowHandle, nodeWindowHandle);

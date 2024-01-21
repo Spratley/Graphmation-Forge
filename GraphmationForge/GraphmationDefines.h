@@ -2,9 +2,9 @@
 
 #define MAX_LOADSTRING 100
 
-#define NODE_WIDTH 150
+// TODO: Widen nodes when text entered extends past width of node
+#define NODE_MIN_WIDTH 150
 #define NODE_HEIGHT 50
-#define NODE_SIZE Size nodeSize(NODE_WIDTH, NODE_HEIGHT)
 
 #define PROPERTIES_PANEL_WIDTH 300
 

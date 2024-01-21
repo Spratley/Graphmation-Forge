@@ -90,6 +90,9 @@
     <ClInclude Include="PropertyContainer.h">
       <Filter>Header Files\Application</Filter>
     </ClInclude>
+    <ClInclude Include="EnumHelper.h">
+      <Filter>Header Files\Application</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="GraphmationForge.rc">
@@ -139,6 +142,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="PropertyContainer.cpp">
+      <Filter>Source Files\Application</Filter>
+    </ClCompile>
+    <ClCompile Include="Property.cpp">
       <Filter>Source Files\Application</Filter>
     </ClCompile>
   </ItemGroup>

@@ -7,7 +7,7 @@ Node::Node(HWND const parentWindowHandle, HWND const windowHandle)
 , m_windowHandle(windowHandle)
 , m_position()
 {
-    m_paintRegion = CreateRectRgn(0, 0, NODE_WIDTH, NODE_HEIGHT);
+    m_paintRegion = CreateRectRgn(0, 0, NODE_MIN_WIDTH, NODE_HEIGHT);
     InitProperties();
 }
 
@@ -46,7 +46,7 @@ HRGN const& Node::GetPaintRegion()
     RECT paintRect;
     paintRect.left = m_position.x;
     paintRect.top = m_position.y;
-    paintRect.right = m_position.x + NODE_WIDTH;
+    paintRect.right = m_position.x + NODE_MIN_WIDTH;
     paintRect.bottom = m_position.y + NODE_HEIGHT;
 
     SetRectRgn(m_paintRegion, paintRect.left, paintRect.top, paintRect.right, paintRect.bottom);

@@ -17,7 +17,29 @@
 
 Transition::Transition(HWND const parentWindowHandle)
 : ISelectable(parentWindowHandle)
-{}
+{
+    InitProperties();
+}
+
+void Transition::SetName(std::wstring const & name)
+{
+    m_properties.GetPropertyPtr<StringProperty>(PropertyID_TransitionName)->m_value = name;
+}
+
+std::wstring const & Transition::GetName() const
+{
+    return m_properties.GetPropertyPtr<StringProperty>(PropertyID_TransitionName)->m_value;
+}
+
+std::vector<TransitionCondition>& Transition::GetConditions()
+{
+    return m_properties.GetPropertyPtr<VectorProperty<TransitionCondition>>(PropertyID_Conditions)->m_value;
+}
+
+std::vector<TransitionCondition> const & Transition::GetConditions() const
+{
+    return m_properties.GetPropertyPtr<VectorProperty<TransitionCondition>>(PropertyID_Conditions)->m_value;
+}
 
 bool Transition::IsMouseOverlapping(POINT mousePos)
 {
@@ -37,10 +59,12 @@ void Transition::Paint(HDC hdc, HBRUSH fillColor)
 
 bool const Transition::HasSameConditions(Transition * transition) const
 {
-    for (TransitionCondition const& condition : m_conditions)
+    std::vector<TransitionCondition> const& myConditions = GetConditions();
+    for (TransitionCondition const& condition : myConditions)
     {
         bool hasMatchingCondition = false;
-        for (TransitionCondition const& otherCondition : transition->GetConditions())
+        std::vector<TransitionCondition> const& otherConditions = transition->GetConditions();
+        for (TransitionCondition const& otherCondition : otherConditions)
         {
             if (condition.IsEqual(otherCondition))
             {
@@ -63,9 +87,9 @@ void Transition::UpdateRegion()
     POINT fromPoint = m_fromNode->GetNodePosition();
     POINT toPoint = m_toNode->GetNodePosition();
 
-    fromPoint.x += NODE_WIDTH / 2;
+    fromPoint.x += NODE_MIN_WIDTH / 2;
     fromPoint.y += NODE_HEIGHT / 2;
-    toPoint.x += NODE_WIDTH / 2;
+    toPoint.x += NODE_MIN_WIDTH / 2;
     toPoint.y += NODE_HEIGHT / 2;
 
     // Normalize direction vector
@@ -150,57 +174,31 @@ void Transition::BuildPointArrow(POINT * outPoints, float directionX, float dire
     outPoints[5] = { arrowEndX - arrowWidthVector.x - arrowHeightVector.x   , arrowEndY - arrowWidthVector.y    - arrowHeightVector.y };
 }
 
+void Transition::InitProperties()
+{
+    m_properties.RegisterProperty(new StringProperty(L"New Transition"), PropertyID_TransitionName);
+    m_properties.RegisterProperty(new VectorProperty<TransitionCondition>(), PropertyID_Conditions);
+}
+
 void TransitionCondition::SetOperatorFromString(std::string const & op)
 {
-    const char* str = op.c_str();
-    if (0 == strcmp(str, OPERATOR_EQUAL))
-    {
-        m_conditionType = EQUAL;
-    }
-    else if (0 == strcmp(str, OPERATOR_NOT_EQUAL))
-    {
-        m_conditionType = NOT_EQUAL;
-    }
-    else if (0 == strcmp(str, OPERATOR_GREATER))
-    {
-        m_conditionType = GREATER;
-    }
-    else if (0 == strcmp(str, OPERATOR_GREATER_EQUAL))
-    {
-        m_conditionType = GREATER_EQUAL;
-    }
-    else if (0 == strcmp(str, OPERATOR_LESS))
-    {
-        m_conditionType = LESS;
-    }
-    else if (0 == strcmp(str, OPERATOR_LESS_EQUAL))
-    {
-        m_conditionType = LESS_EQUAL;
-    }
+    std::wstring str = StringConvert::ToWStr(op);
+    OperatorType::Enum value = OperatorType::FromString(str);
+    m_properties.GetPropertyPtr<EnumProperty<OperatorType, OperatorType::Enum>>(PropertyID_ConditionType)->m_value = value;
 }
 
 void TransitionCondition::SetVariableTypeFromString(std::string const & type)
 {
-    const char* str = type.c_str();
-    if (0 == strcmp(str, CONDITION_OP_INT))
-    {
-        m_expectedType = TYPE_INT;
-    }
-    else if (0 == strcmp(str, CONDITION_OP_FLOAT))
-    {
-        m_expectedType = TYPE_FLOAT;
-    }
-    else if (0 == strcmp(str, CONDITION_OP_BOOL) || 0 == strcmp(str, CONDITION_BOOLEAN))
-    {
-        m_expectedType = TYPE_BOOL;
-    }
+    std::wstring str = StringConvert::ToWStr(type);
+    VariableType::Enum value = VariableType::FromString(str);
+    m_properties.GetPropertyPtr<EnumProperty<VariableType, VariableType::Enum>>(PropertyID_ExpectedType)->m_value = value;
 }
 
 bool const TransitionCondition::IsEqual(TransitionCondition const & other) const
 {
-    bool sameName = StrCmpW(m_variableName.c_str(), other.m_variableName.c_str()) == 0;
-    bool sameType = m_expectedType == other.m_expectedType;
-    bool sameCondition = m_conditionType == other.m_conditionType;
+    bool sameName = StrCmpW(GetVariableName().c_str(), other.GetVariableName().c_str()) == 0;
+    bool sameType = GetVariableType() == other.GetVariableType();
+    bool sameCondition = GetConditionType() == other.GetConditionType();
 
     if (!sameName || !sameType || !sameCondition)
     {
@@ -208,15 +206,15 @@ bool const TransitionCondition::IsEqual(TransitionCondition const & other) const
     }
 
     // Check variable
-    switch (m_expectedType)
+    switch (GetVariableType())
     {
     default:
-    case TYPE_BOOL:
-        return m_value.m_bool == other.m_value.m_bool;
-    case TYPE_FLOAT:
-        return m_value.m_float == other.m_value.m_float;
-    case TYPE_INT:
-        return m_value.m_int == other.m_value.m_int;
+    case VariableType::TYPE_BOOL:
+        return GetVariable().m_bool == other.GetVariable().m_bool;
+    case VariableType::TYPE_FLOAT:
+        return GetVariable().m_float == other.GetVariable().m_float;
+    case VariableType::TYPE_INT:
+        return GetVariable().m_int == other.GetVariable().m_int;
     }
 }
 
@@ -232,17 +230,17 @@ void TransitionCondition::BuildJSON(JParse::Object * container) const
 
     if (ShouldSerializeValue())
     {
-        switch (m_expectedType)
+        switch (GetVariableType())
         {
-        case TYPE_BOOL:
-            SET_DATA(container, CONDITION_VALUE, JParse::Boolean, m_value.m_bool);
+        case VariableType::Enum::TYPE_BOOL:
+            SET_DATA(container, CONDITION_VALUE, JParse::Boolean, GetVariable().m_bool);
             break;
-        case TYPE_FLOAT:
-            SET_DATA(container, CONDITION_VALUE, JParse::Float, m_value.m_float);
+        case VariableType::Enum::TYPE_FLOAT:
+            SET_DATA(container, CONDITION_VALUE, JParse::Float, GetVariable().m_float);
             break;
         default:
-        case TYPE_INT:
-            SET_DATA(container, CONDITION_VALUE, JParse::Integer, m_value.m_int);
+        case VariableType::Enum::TYPE_INT:
+            SET_DATA(container, CONDITION_VALUE, JParse::Integer, GetVariable().m_int);
             break;
         }
     }
@@ -250,7 +248,7 @@ void TransitionCondition::BuildJSON(JParse::Object * container) const
 
 bool const TransitionCondition::ShouldSerializeOperation() const
 {
-    if (m_expectedType == TYPE_BOOL && m_conditionType == EQUAL && m_value.m_bool == true)
+    if (GetVariableType() == VariableType::Enum::TYPE_BOOL && GetConditionType() == OperatorType::Enum::EQUAL && GetVariable().m_bool == true)
     {
         // We are just a Boolean IsTrue, so recording the operation is redundant
         return false;
@@ -261,7 +259,7 @@ bool const TransitionCondition::ShouldSerializeOperation() const
 
 bool const TransitionCondition::ShouldSerializeValue() const
 {
-    if (m_expectedType == TYPE_BOOL && m_conditionType == EQUAL && m_value.m_bool == true)
+    if (GetVariableType() == VariableType::Enum::TYPE_BOOL && GetConditionType() == OperatorType::Enum::EQUAL && GetVariable().m_bool == true)
     {
         // We are just a Boolean IsTrue, so recording the value is redundant
         return false;
@@ -272,43 +270,96 @@ bool const TransitionCondition::ShouldSerializeValue() const
 
 std::string const TransitionCondition::GetVariableNameStr() const
 {
-    return StringConvert::ToStr(m_variableName);
+    return StringConvert::ToStr(GetVariableName());
 }
 
 std::string const TransitionCondition::GetConditionTypeStr() const
 {
-    switch (m_expectedType)
+    switch (GetVariableType())
     {
-    case TYPE_BOOL:
-        if (m_conditionType == EQUAL && m_value.m_bool == true)
+    case VariableType::Enum::TYPE_BOOL:
+        if (GetConditionType() == OperatorType::Enum::EQUAL && GetVariable().m_bool == true)
         {
             return CONDITION_BOOLEAN;
         }
         return CONDITION_OP_BOOL;
-    case TYPE_FLOAT:
+    case VariableType::Enum::TYPE_FLOAT:
         return CONDITION_OP_FLOAT;
     default:
-    case TYPE_INT:
+    case VariableType::Enum::TYPE_INT:
         return CONDITION_OP_INT;
     }
 }
 
 std::string const TransitionCondition::GetOperatorTypeStr() const
 {
-    switch (m_conditionType)
+    switch (GetConditionType())
     {
     default:
-    case EQUAL:
+    case OperatorType::Enum::EQUAL:
         return OPERATOR_EQUAL;
-    case NOT_EQUAL:
+    case OperatorType::Enum::NOT_EQUAL:
         return OPERATOR_NOT_EQUAL;
-    case LESS:
+    case OperatorType::Enum::LESS:
         return OPERATOR_LESS;
-    case LESS_EQUAL:
+    case OperatorType::Enum::LESS_EQUAL:
         return OPERATOR_LESS_EQUAL;
-    case GREATER:
+    case OperatorType::Enum::GREATER:
         return OPERATOR_GREATER;
-    case GREATER_EQUAL:
+    case OperatorType::Enum::GREATER_EQUAL:
         return OPERATOR_GREATER_EQUAL;
     }
+}
+
+void TransitionCondition::SetVariableName(std::wstring const & name)
+{
+    m_properties.GetPropertyPtr<StringProperty>(PropertyID_VariableName)->m_value = name;
+}
+
+void TransitionCondition::SetVariableType(VariableType::Enum const & type)
+{
+    m_properties.GetPropertyPtr<EnumProperty<VariableType, VariableType::Enum>>(PropertyID_ExpectedType)->m_value = type;
+}
+
+void TransitionCondition::SetConditionType(OperatorType::Enum const & type)
+{
+    m_properties.GetPropertyPtr<EnumProperty<OperatorType, OperatorType::Enum>>(PropertyID_ConditionType)->m_value = type;
+}
+
+void TransitionCondition::SetVariable(Variable const & variable)
+{
+    m_properties.GetPropertyPtr<VariableProperty>(PropertyID_Variable)->m_value = variable;
+}
+
+std::wstring const & TransitionCondition::GetVariableName() const
+{
+    return m_properties.GetPropertyPtr<StringProperty>(PropertyID_VariableName)->m_value;
+}
+
+VariableType::Enum const & TransitionCondition::GetVariableType() const
+{
+    return m_properties.GetPropertyPtr<EnumProperty<VariableType, VariableType::Enum>>(PropertyID_ExpectedType)->m_value;
+}
+
+OperatorType::Enum const & TransitionCondition::GetConditionType() const
+{
+    return m_properties.GetPropertyPtr<EnumProperty<OperatorType, OperatorType::Enum>>(PropertyID_ConditionType)->m_value;
+}
+
+Variable const & TransitionCondition::GetVariableConst() const
+{
+    return m_properties.GetPropertyPtr<VariableProperty>(PropertyID_Variable)->m_value;
+}
+
+Variable & TransitionCondition::GetVariable()
+{
+    m_properties.GetPropertyPtr<VariableProperty>(PropertyID_Variable)->m_value;
+}
+
+void TransitionCondition::InitProperties()
+{
+    m_properties.RegisterProperty(new StringProperty(L"VariableName"), PropertyID_VariableName);
+    m_properties.RegisterProperty(new EnumProperty<VariableType, VariableType::Enum>(VariableType::TYPE_INT), PropertyID_ExpectedType);
+    m_properties.RegisterProperty(new EnumProperty<OperatorType, OperatorType::Enum>(OperatorType::EQUAL), PropertyID_ConditionType);
+    m_properties.RegisterProperty(new VariableProperty(), PropertyID_Variable);
 }

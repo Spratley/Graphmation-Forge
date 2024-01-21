@@ -18,6 +18,11 @@ void PropertiesWindow::UpdatePropertiesWindowSize()
     MoveWindow(m_windowHandle, parentRect.right - PROPERTIES_PANEL_WIDTH, 0, PROPERTIES_PANEL_WIDTH, parentRect.bottom, true);
 }
 
+PropertiesWindow::~PropertiesWindow()
+{
+    ClearPropertiesContent();
+}
+
 void PropertiesWindow::SetPropertiesContent(ISelectable * selectedObject)
 {
     m_selectedObject = selectedObject;
@@ -28,23 +33,36 @@ void PropertiesWindow::SetPropertiesContent(ISelectable * selectedObject)
     {
         Property* propertyPtr = property.second;
         PropertyType propertyType = propertyPtr->GetPropertyType();
-        HWND propertyWindowHandle = CreateContent(L"Property", propertyType, contentOffset);
+        HWND propertyWindowHandle = CreateContentWindow(L"Property", propertyType, contentOffset);
         contentOffset += 30;
 
         // Initialize values
         switch (propertyType)
         {
         case DROPDOWN:
+        {
+            // Set potential values in dropdown
+            std::vector <std::wstring> dropdownValues = propertyPtr->GetDropdownItems();
+            for (std::wstring const& dropdownItem : dropdownValues)
             {
-                // Set potential values in dropdown
-                std::vector <std::wstring> dropdownValues = propertyPtr->GetDropdownItems();
-                for (std::wstring const& dropdownItem : dropdownValues)
-                {
-                    SendMessage(propertyWindowHandle, (UINT)CB_ADDSTRING, (WPARAM)0, (LPARAM)dropdownItem.c_str());
-                }
+                SendMessage(propertyWindowHandle, (UINT)CB_ADDSTRING, (WPARAM)0, (LPARAM)dropdownItem.c_str());
             }
+
+            SendMessage(propertyWindowHandle, (UINT)CB_SETCURSEL, (WPARAM)propertyPtr->GetDropdownDefaultItem(), (LPARAM)0);
             break;
         }
+        case TEXT_BOX:
+        {
+            SetWindowText(propertyWindowHandle, propertyPtr->GetTextItem().c_str());
+            break;
+        }
+        }
+
+        // Add the new content to my memory
+        ContentProperty content;
+        content.m_windowHandle = propertyWindowHandle;
+        content.m_connectedProperty = propertyPtr;
+        m_contents.push_back(content);
     }
 }
 
@@ -52,9 +70,9 @@ void PropertiesWindow::ClearPropertiesContent()
 {
     m_selectedObject = nullptr;
 
-    for (HWND hWnd : m_contents)
+    for (ContentProperty content : m_contents)
     {
-        DestroyWindow(hWnd);
+        DestroyWindow(content.m_windowHandle);
     }
     m_contents.clear();
 }
@@ -69,10 +87,43 @@ void PropertiesWindow::Paint(WIN32_CALLBACK_PARAMS)
 
 void PropertiesWindow::PropagatePropertyValues()
 {
-    // Set the properties of whatever is selected to the values in my content 
+    for (ContentProperty const& content : m_contents)
+    {
+        HWND contentWindowHandle = content.m_windowHandle;
+        std::vector<WCHAR> value;
+        switch (content.m_connectedProperty->GetPropertyType())
+        {
+        case DROPDOWN:
+        {
+            int const chosenIndex = (int)SendMessage(contentWindowHandle, CB_GETCURSEL, NULL, NULL);
+            if (chosenIndex == CB_ERR)
+            {
+                continue;
+            }
+            int const length = (int)SendMessage(contentWindowHandle, CB_GETLBTEXTLEN, (WPARAM)chosenIndex, NULL);
+            if (length == CB_ERR)
+            {
+                continue;
+            }
+            value.resize(length + 1);
+            SendMessageW(contentWindowHandle, CB_GETLBTEXT, (WPARAM)chosenIndex, (LPARAM)value.data());
+            break;
+        }
+        case TEXT_BOX:
+        {
+            int const length = GetWindowTextLength(contentWindowHandle);
+            value.resize(length + 1);
+            GetWindowText(contentWindowHandle, value.data(), length + 1);
+            break;
+        }
+        }
+
+        content.m_connectedProperty->SetFromText(value.data());
+    }
+    m_selectedObject->InvalidatePaintArea();
 }
 
-HWND PropertiesWindow::CreateContent(std::wstring const & label, PropertyType propertyType, int const verticalOffset)
+HWND PropertiesWindow::CreateContentWindow(std::wstring const & label, PropertyType propertyType, int const verticalOffset)
 {
     HWND contentWindow = NULL;
 
@@ -95,6 +146,5 @@ HWND PropertiesWindow::CreateContent(std::wstring const & label, PropertyType pr
             (HMENU)ID_COMMAND_DROPDOWN, NULL, NULL);
     }
     
-    m_contents.push_back(contentWindow);
     return contentWindow;
 }

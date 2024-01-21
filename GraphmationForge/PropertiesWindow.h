@@ -8,11 +8,18 @@
 
 class ISelectable;
 
+struct ContentProperty
+{
+    HWND m_windowHandle;
+    Property* m_connectedProperty;
+};
+
 class PropertiesWindow
 {
 public:
     PropertiesWindow() {}
     PropertiesWindow(HWND hWnd, HWND parentHandle);
+    ~PropertiesWindow();
 
     void UpdatePropertiesWindowSize();
 
@@ -26,12 +33,12 @@ public:
     HWND const& GetHWND() { return m_windowHandle; }
 
 private:
-    HWND CreateContent(std::wstring const& label, PropertyType propertyType, int const verticalOffsets);
+    HWND CreateContentWindow(std::wstring const& label, PropertyType propertyType, int const verticalOffsets);
 
 private:
     HWND m_parentHandle;
     HWND m_windowHandle;
 
-    std::vector<HWND> m_contents;
+    std::vector<ContentProperty> m_contents;
     ISelectable* m_selectedObject = nullptr;
 };
