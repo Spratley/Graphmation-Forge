@@ -210,11 +210,11 @@ bool const TransitionCondition::IsEqual(TransitionCondition const & other) const
     {
     default:
     case VariableType::TYPE_BOOL:
-        return GetVariable().m_bool == other.GetVariable().m_bool;
+        return GetVariableConst().m_bool == other.GetVariableConst().m_bool;
     case VariableType::TYPE_FLOAT:
-        return GetVariable().m_float == other.GetVariable().m_float;
+        return GetVariableConst().m_float == other.GetVariableConst().m_float;
     case VariableType::TYPE_INT:
-        return GetVariable().m_int == other.GetVariable().m_int;
+        return GetVariableConst().m_int == other.GetVariableConst().m_int;
     }
 }
 
@@ -233,14 +233,14 @@ void TransitionCondition::BuildJSON(JParse::Object * container) const
         switch (GetVariableType())
         {
         case VariableType::Enum::TYPE_BOOL:
-            SET_DATA(container, CONDITION_VALUE, JParse::Boolean, GetVariable().m_bool);
+            SET_DATA(container, CONDITION_VALUE, JParse::Boolean, GetVariableConst().m_bool);
             break;
         case VariableType::Enum::TYPE_FLOAT:
-            SET_DATA(container, CONDITION_VALUE, JParse::Float, GetVariable().m_float);
+            SET_DATA(container, CONDITION_VALUE, JParse::Float, GetVariableConst().m_float);
             break;
         default:
         case VariableType::Enum::TYPE_INT:
-            SET_DATA(container, CONDITION_VALUE, JParse::Integer, GetVariable().m_int);
+            SET_DATA(container, CONDITION_VALUE, JParse::Integer, GetVariableConst().m_int);
             break;
         }
     }
@@ -248,7 +248,7 @@ void TransitionCondition::BuildJSON(JParse::Object * container) const
 
 bool const TransitionCondition::ShouldSerializeOperation() const
 {
-    if (GetVariableType() == VariableType::Enum::TYPE_BOOL && GetConditionType() == OperatorType::Enum::EQUAL && GetVariable().m_bool == true)
+    if (GetVariableType() == VariableType::Enum::TYPE_BOOL && GetConditionType() == OperatorType::Enum::EQUAL && GetVariableConst().m_bool == true)
     {
         // We are just a Boolean IsTrue, so recording the operation is redundant
         return false;
@@ -259,7 +259,7 @@ bool const TransitionCondition::ShouldSerializeOperation() const
 
 bool const TransitionCondition::ShouldSerializeValue() const
 {
-    if (GetVariableType() == VariableType::Enum::TYPE_BOOL && GetConditionType() == OperatorType::Enum::EQUAL && GetVariable().m_bool == true)
+    if (GetVariableType() == VariableType::Enum::TYPE_BOOL && GetConditionType() == OperatorType::Enum::EQUAL && GetVariableConst().m_bool == true)
     {
         // We are just a Boolean IsTrue, so recording the value is redundant
         return false;
@@ -278,7 +278,7 @@ std::string const TransitionCondition::GetConditionTypeStr() const
     switch (GetVariableType())
     {
     case VariableType::Enum::TYPE_BOOL:
-        if (GetConditionType() == OperatorType::Enum::EQUAL && GetVariable().m_bool == true)
+        if (GetConditionType() == OperatorType::Enum::EQUAL && GetVariableConst().m_bool == true)
         {
             return CONDITION_BOOLEAN;
         }
@@ -353,7 +353,7 @@ Variable const & TransitionCondition::GetVariableConst() const
 
 Variable & TransitionCondition::GetVariable()
 {
-    m_properties.GetPropertyPtr<VariableProperty>(PropertyID_Variable)->m_value;
+    return m_properties.GetPropertyPtr<VariableProperty>(PropertyID_Variable)->m_value;
 }
 
 void TransitionCondition::InitProperties()

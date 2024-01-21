@@ -56,6 +56,7 @@ struct BoolProperty : public Property
 struct VariableProperty : public Property
 {
     void SetFromText(LPCTSTR text) override;
+    PropertyType const GetPropertyType() const override { return TEXT_BOX; }
 
     Variable m_value;
 };
@@ -92,7 +93,7 @@ inline std::vector<std::wstring> const EnumProperty<T, E>::GetDropdownItems() co
     std::vector<std::wstring> result;
     for (int i = 0; i < E::COUNT; i++)
     {
-        result.push_back(T::ToString(i));
+        result.push_back(T::ToString((E)i));
     }
     return result;
 }
