@@ -18,6 +18,8 @@
 #define ID_CONTEXT_CREATE_ANIMSTATE     221
 #define ID_COMMAND_EDIT                 230
 #define ID_COMMAND_DROPDOWN             231
+#define ID_COMMAND_NEW_CONDITION        232
+#define ID_COMMAND_DELETE_CONDITION     300
 #define IDM_OPEN                        32773
 #define IDM_NEW                         32775
 #define IDM_SAVE                        32777

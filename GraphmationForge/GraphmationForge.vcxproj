@@ -156,6 +156,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="EnumHelper.h" />
+    <ClInclude Include="FakeTransition.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="GraphDrawer.h" />
     <ClInclude Include="GraphmationColors.h" />
@@ -178,6 +179,7 @@
     <ClInclude Include="Transition.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="FakeTransition.cpp" />
     <ClCompile Include="GraphDrawer.cpp" />
     <ClCompile Include="GraphmationForgeApp.cpp" />
     <ClCompile Include="GraphmationForgeMain.cpp" />

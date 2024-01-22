@@ -93,6 +93,9 @@
     <ClInclude Include="EnumHelper.h">
       <Filter>Header Files\Application</Filter>
     </ClInclude>
+    <ClInclude Include="FakeTransition.h">
+      <Filter>Header Files\Application</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="GraphmationForge.rc">
@@ -145,6 +148,9 @@
       <Filter>Source Files\Application</Filter>
     </ClCompile>
     <ClCompile Include="Property.cpp">
+      <Filter>Source Files\Application</Filter>
+    </ClCompile>
+    <ClCompile Include="FakeTransition.cpp">
       <Filter>Source Files\Application</Filter>
     </ClCompile>
   </ItemGroup>

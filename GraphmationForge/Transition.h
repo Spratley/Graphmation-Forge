@@ -18,6 +18,9 @@ namespace JParse
 
 struct TransitionCondition
 {
+    TransitionCondition();
+    TransitionCondition(TransitionCondition const& other);
+
     void SetOperatorFromString(std::string const& op);
     void SetVariableTypeFromString(std::string const& type);
     bool const IsEqual(TransitionCondition const& other) const;
@@ -83,6 +86,9 @@ public:
     void Paint(HDC hdc, HBRUSH fillColor);
 
     bool const HasSameConditions(Transition* transition) const;
+
+    void AddNewCondition();
+    void DeleteCondition(int conditionIndex);
     
 private:
     void UpdateRegion();

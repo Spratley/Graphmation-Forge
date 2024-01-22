@@ -5,6 +5,7 @@
 #include "GraphDrawer.h"
 #include "Timer.h"
 #include "PropertiesWindow.h"
+#include "FakeTransition.h"
 
 #include <unordered_map>
 #include <unordered_set>
@@ -79,6 +80,8 @@ private:
 
     void OnSelectionChanged();
 
+    void BeginCreateTransition();
+
     // File IO
     bool OpenFile();
     bool SaveFile();
@@ -114,4 +117,24 @@ private:
     // Temp?
     TimePoint m_lastUpdateTime = 0;
     bool m_isDragging = false;
+
+    // This code is so bad at this point, please don't look at it
+    // Graphmation Forge needs a 2.0 redo to fix it, theres no hope anymore
+
+    enum AppState
+    {
+        Default,
+        Create_Transition
+    };
+
+    AppState m_currentAppState = Default;
+
+    // GROSS GROSS GROSS EW
+    // Okay SO. I don't want to do it because this app is literally just a tool for another project of mine and not for actual release
+    // BUT if I were to do this right, I'd have an AppState class/struct that gets swapped out for each unique type of user interaction state
+    // Like generic editing vs creating transitions
+    // Then this gross stuff could all be handled by the appstate and trashed when the appstate is changed back to the default one instead of an enum
+    // EW EW EW I hate this code
+    Node* m_createTransitionStartingNode = nullptr;
+    FakeTransition m_createTransitionFakeTransition;
 };

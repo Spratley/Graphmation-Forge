@@ -62,6 +62,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 }
 
 GraphmationForgeApp::GraphmationForgeApp()
+: m_createTransitionFakeTransition(NULL)
 {
     // Don't care about multiple instances because if there is then you already messed up
     s_instance = this;
@@ -129,6 +130,15 @@ int GraphmationForgeApp::OnWindowPaint(WIN32_CALLBACK_PARAMS)
 int GraphmationForgeApp::OnWindowCommand(WIN32_CALLBACK_PARAMS)
 {
     int commandID = LOWORD(wParam);
+
+    // Special case for delete condition button
+    if (PropertiesWindow::IsDeleteConditionButton(commandID))
+    {
+        m_propertiesWindow.DeleteCondition(commandID - ID_COMMAND_DELETE_CONDITION);
+        m_propertiesWindow.RebuildPropertiesContent();
+        return 0;
+    }
+
     // Parse the menu selections:
     switch (commandID)
     {
@@ -154,7 +164,7 @@ int GraphmationForgeApp::OnWindowCommand(WIN32_CALLBACK_PARAMS)
         CreateNodeAtMousePos();
         break;
     case ID_CONTEXT_CREATE_TRANSITION:
-
+        BeginCreateTransition();
         break;
     case ID_COMMAND_EDIT:
         if (HIWORD(wParam) == EN_UPDATE)
@@ -167,6 +177,18 @@ int GraphmationForgeApp::OnWindowCommand(WIN32_CALLBACK_PARAMS)
         {
             m_propertiesWindow.PropagatePropertyValues();
         }
+    case ID_COMMAND_NEW_CONDITION:
+        if (HIWORD(wParam) == BN_CLICKED)
+        {
+            if (m_selectedObjects.size() == 1)
+            {
+                if (Transition* transition = dynamic_cast<Transition*>(*m_selectedObjects.begin()))
+                {
+                    transition->AddNewCondition();
+                    m_propertiesWindow.RebuildPropertiesContent();
+                }
+            }
+        }
     default:
         return -1;
     }
@@ -175,6 +197,28 @@ int GraphmationForgeApp::OnWindowCommand(WIN32_CALLBACK_PARAMS)
 
 int GraphmationForgeApp::OnLeftMouseButtonDown(WIN32_CALLBACK_PARAMS)
 {   
+    // Custom behavior for creating transition
+    if (m_currentAppState == Create_Transition)
+    {
+        if (m_potentialSelectable)
+        {
+            if (Node* selectedNode = dynamic_cast<Node*>(m_potentialSelectable))
+            {
+                CreateTransition(m_createTransitionStartingNode, selectedNode);
+            }
+        }
+
+        m_currentAppState = Default;
+        m_createTransitionFakeTransition.ForceInvalidateCurrentPaintRegion(); // Redraw fake transition to clear it off the screen
+
+        return 0;
+    }
+
+
+
+
+
+
     // if (hWnd != m_mainWindowHandle)
     // {
     //     // Only interpret mouse button down for the main window
@@ -287,6 +331,23 @@ int GraphmationForgeApp::OnMouseMoved(WIN32_CALLBACK_PARAMS)
     }
 
     m_potentialSelectable = nullptr;
+    // Check transitions
+    for (Transition* const transition : m_transitions)
+    {
+        SelectionState nextMouseOverState = NONE;
+        if (transition->IsMouseOverlapping(mousePos))
+        {
+            m_potentialSelectable = transition;
+            nextMouseOverState = HIGHLIGHTED;
+        }
+
+        if (transition->GetSelectionState() != SELECTED)
+        {
+            transition->SetSelectionState(nextMouseOverState);
+        }
+    }
+
+    // Check nodes after so they get priority for selection
     for (Node* const node : m_nodes)
     {
         SelectionState nextMouseOverState = NONE;
@@ -302,11 +363,38 @@ int GraphmationForgeApp::OnMouseMoved(WIN32_CALLBACK_PARAMS)
         }
     }
 
+    // If creating transition, redraw arrow that goes to mouse position
+    if (m_currentAppState == Create_Transition)
+    {
+        TimePoint timeSinceUpdate = GraphmationTimer::GetCurrentTimeMS() - m_lastUpdateTime;
+        if (timeSinceUpdate < 80)
+        {
+            return -1;
+        }
+        m_lastUpdateTime = GraphmationTimer::GetCurrentTimeMS();
+
+        // HACK: Just draw the arrow because coding is hard :(
+        m_createTransitionFakeTransition.ForceInvalidateCurrentPaintRegion();
+        m_createTransitionFakeTransition.SetToPoint(mousePos);
+        m_createTransitionFakeTransition.InvalidatePaintArea();
+        
+        // Lets try invalidating the entire client rect
+        // RECT mainWindowRect;
+        // GetClientRect(m_mainWindowHandle, &mainWindowRect);
+        // InvalidateRect(m_mainWindowHandle, &mainWindowRect, true);
+    }
+
+
     return 0;
 }
 
 int GraphmationForgeApp::OnOpenContextMenu(WIN32_CALLBACK_PARAMS)
 {
+    if (m_currentAppState != Default)
+    {
+        return -1;
+    }
+
     if (hWnd == m_mainWindowHandle)
     {
         POINT mousePos;
@@ -392,6 +480,7 @@ void GraphmationForgeApp::OnMainWindowCreated(WIN32_CALLBACK_PARAMS)
             (HMENU)ID_CLASS_PROPERTIES_PANEL, NULL, NULL);
 
     m_propertiesWindow = PropertiesWindow(propertiesWindowHandle, m_mainWindowHandle);
+    m_createTransitionFakeTransition = FakeTransition(m_mainWindowHandle);
 }
 
 void GraphmationForgeApp::PaintMainWindow(WIN32_CALLBACK_PARAMS)
@@ -401,7 +490,23 @@ void GraphmationForgeApp::PaintMainWindow(WIN32_CALLBACK_PARAMS)
 
     for (Transition* transition : m_transitions)
     {
-        transition->Paint(hdc, m_brushes[ID_COLOR_TRANSITION_DESELECTED]);
+        ColorIDs color = ID_COLOR_TRANSITION_DESELECTED;
+        SelectionState const transitionState = transition->GetSelectionState();
+        if (transitionState == HIGHLIGHTED)
+        {
+            color = ID_COLOR_TRANSITION_HIGHLIGHTED;
+        }
+        else if (transitionState == SELECTED)
+        {
+            color = ID_COLOR_TRANSITION_SELECTED;
+        }
+
+        transition->Paint(hdc, m_brushes[color]);
+    }
+
+    if (m_currentAppState == Create_Transition)
+    {
+        m_createTransitionFakeTransition.Paint(hdc, m_brushes[ID_COLOR_TRANSITION_DESELECTED]);
     }
 
     EndPaint(hWnd, &ps);
@@ -515,6 +620,27 @@ void GraphmationForgeApp::OnSelectionChanged()
         return;
     }
     m_propertiesWindow.ClearPropertiesContent();
+}
+
+void GraphmationForgeApp::BeginCreateTransition()
+{
+    if (!m_potentialSelectable)
+    {
+        return;
+    }
+
+    Node* startingNode = dynamic_cast<Node*>(m_potentialSelectable);
+    if (!startingNode)
+    {
+        return;
+    }
+
+    m_createTransitionStartingNode = startingNode;
+    POINT fromPoint = startingNode->GetNodePosition();
+    fromPoint.x += NODE_MIN_WIDTH / 2;
+    fromPoint.y += NODE_HEIGHT / 2;
+    m_createTransitionFakeTransition.SetFromPoint(fromPoint);
+    m_currentAppState = Create_Transition;
 }
 
 bool GraphmationForgeApp::OpenFile()
@@ -833,6 +959,9 @@ bool GraphmationForgeApp::TryUnloadGraph()
     m_containsUnsavedChanges = false;
 
     m_isDragging = false;
+
+    m_currentAppState = Default;
+    m_createTransitionStartingNode = nullptr;
     return true;
 }
 
@@ -931,9 +1060,20 @@ Transition * const GraphmationForgeApp::CreateTransition(Node * const fromNode, 
     Transition* transition = new Transition(m_mainWindowHandle);
     transition->SetFromNode(fromNode);
     transition->SetToNode(toNode);
+
+    std::vector<Transition*> siblingTransitions = GetTransitionsAttachedFromNode(toNode);
+    for (Transition* const sibling : siblingTransitions)
+    {
+        sibling->InvalidatePaintArea();
+    }
+    
+    m_transitions.push_back(transition);
     transition->InvalidatePaintArea();
 
-    m_transitions.push_back(transition);
+    for (Transition* const sibling : siblingTransitions)
+    {
+        sibling->InvalidatePaintArea();
+    }
 
     m_containsUnsavedChanges = true;
     return transition;

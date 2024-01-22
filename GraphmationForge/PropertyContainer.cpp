@@ -1,27 +1,36 @@
 #include "PropertyContainer.h"
 
-PropertyContainer::~PropertyContainer()
-{
-    for (auto const& property : m_properties)
-    {
-        delete property.second;
-    }
+#include "Property.h"
+
+PropertyContainer::PropertyContainer(PropertyContainer const& other)
+: m_properties(other.m_properties)
+{ 
+
 }
 
-void PropertyContainer::RegisterProperty(Property * property, int const propertyID)
+PropertyContainer::~PropertyContainer()
 {
-    if (m_properties.count(propertyID) > 0)
+    // Now that we're using std::unique_ptr we don't have to delete properties
+    // for (auto const& property : m_properties)
+    // {
+    //     delete property.second;
+    // }
+}
+
+void PropertyContainer::RegisterProperty(std::shared_ptr<Property> property, int const propertyID)
+{
+    /*if (m_properties.count(propertyID) > 0)
     {
         delete m_properties[propertyID];
-    }
+    }*/
     m_properties[propertyID] = property;
 }
  
-Property * PropertyContainer::GetProperty(int const propertyID) const
+std::shared_ptr<Property> PropertyContainer::GetProperty(int const propertyID) const
 {
     if (m_properties.count(propertyID) == 0)
     {
-        return nullptr;
+        return std::shared_ptr<Property>(nullptr);
     }
     return m_properties.at(propertyID);
 }

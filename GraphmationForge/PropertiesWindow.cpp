@@ -4,6 +4,8 @@
 
 #include "resource.h"
 
+#include "Transition.h"
+
 PropertiesWindow::PropertiesWindow(HWND hWnd, HWND parentHandle)
 : m_windowHandle(hWnd)
 , m_parentHandle(parentHandle)
@@ -28,13 +30,48 @@ void PropertiesWindow::SetPropertiesContent(ISelectable * selectedObject)
     m_selectedObject = selectedObject;
     
     int contentOffset = 50;
-    std::unordered_map<int, Property*> const& selectedObjectProperties = selectedObject->GetProperties();
-    for (auto const& property : selectedObjectProperties)
+    AddPropertiesToPanel(selectedObject->GetProperties(), contentOffset);
+}
+
+void PropertiesWindow::ClearPropertiesContent()
+{
+    m_selectedObject = nullptr;
+
+    for (ContentProperty content : m_contents)
     {
-        Property* propertyPtr = property.second;
+        DestroyWindow(content.m_windowHandle);
+    }
+    m_contents.clear();
+
+    for (HWND hWnd : m_additionalObjectsToRemove)
+    {
+        DestroyWindow(hWnd);
+    }
+    m_additionalObjectsToRemove.clear();
+}
+
+void PropertiesWindow::RebuildPropertiesContent()
+{
+    ISelectable* selectedObject = m_selectedObject;
+    ClearPropertiesContent();
+    SetPropertiesContent(selectedObject);
+}
+
+int PropertiesWindow::AddPropertiesToPanel(std::unordered_map<int, std::shared_ptr<Property>> propertiesSet, int contentOffset)
+{
+    for (auto const& property : propertiesSet)
+    {
+        std::shared_ptr<Property> propertyPtr = property.second;
         PropertyType propertyType = propertyPtr->GetPropertyType();
+
+        if (propertyType == COMPOUND)
+        {
+            contentOffset += HandleConditionsProperty(propertyPtr, contentOffset);
+            continue;
+        }
+
         HWND propertyWindowHandle = CreateContentWindow(L"Property", propertyType, contentOffset);
-        contentOffset += 30;
+        contentOffset += 35;
 
         // Initialize values
         switch (propertyType)
@@ -64,17 +101,8 @@ void PropertiesWindow::SetPropertiesContent(ISelectable * selectedObject)
         content.m_connectedProperty = propertyPtr;
         m_contents.push_back(content);
     }
-}
 
-void PropertiesWindow::ClearPropertiesContent()
-{
-    m_selectedObject = nullptr;
-
-    for (ContentProperty content : m_contents)
-    {
-        DestroyWindow(content.m_windowHandle);
-    }
-    m_contents.clear();
+    return contentOffset;
 }
 
 void PropertiesWindow::Paint(WIN32_CALLBACK_PARAMS)
@@ -123,6 +151,17 @@ void PropertiesWindow::PropagatePropertyValues()
     m_selectedObject->InvalidatePaintArea();
 }
 
+void PropertiesWindow::DeleteCondition(int conditionIndex)
+{
+    Transition* transition = dynamic_cast<Transition*>(m_selectedObject);
+    if (!transition)
+    {
+        return;
+    }
+
+    transition->DeleteCondition(conditionIndex);
+}
+
 HWND PropertiesWindow::CreateContentWindow(std::wstring const & label, PropertyType propertyType, int const verticalOffset)
 {
     HWND contentWindow = NULL;
@@ -147,4 +186,65 @@ HWND PropertiesWindow::CreateContentWindow(std::wstring const & label, PropertyT
     }
     
     return contentWindow;
+}
+
+int PropertiesWindow::HandleConditionsProperty(std::shared_ptr<Property> const property, int const contentOffset)
+{
+    int postOffset = contentOffset;
+
+    std::shared_ptr<VectorProperty<TransitionCondition>> conditionsProperty = std::dynamic_pointer_cast<VectorProperty<TransitionCondition>>(property);
+    if (!conditionsProperty)
+    {
+        return postOffset;
+    }
+
+    std::vector<TransitionCondition> const& conditions = conditionsProperty->m_value;
+
+    postOffset += 10;
+
+    // Create fields for all conditions
+    int i = 0;
+    for (TransitionCondition const& condition : conditions)
+    {
+        postOffset = AddPropertiesToPanel(condition.m_properties.GetProperties(), postOffset);
+
+        HWND deleteButton = CreateDeleteConditionButton(i);
+        m_additionalObjectsToRemove.push_back(deleteButton);
+        MoveWindow(deleteButton, 10, postOffset, PROPERTIES_PANEL_WIDTH - 20, 30, true);
+        
+        postOffset += 45;
+        i++;
+    }
+
+    // Create ADD button for conditions
+    HWND newButton = CreateNewConditionButton();
+    m_additionalObjectsToRemove.push_back(newButton);
+    MoveWindow(newButton, 10, postOffset, PROPERTIES_PANEL_WIDTH - 20, 30, true);
+    postOffset += 35;
+    return postOffset;
+}
+
+HWND PropertiesWindow::CreateNewConditionButton()
+{
+    HWND hWndButton = CreateWindow(
+        L"BUTTON", L"New Condition", 
+        WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,
+        0, 0, 0, 0,
+        m_windowHandle,
+        (HMENU)ID_COMMAND_NEW_CONDITION,
+        NULL, NULL);
+
+    return hWndButton;
+}
+
+HWND PropertiesWindow::CreateDeleteConditionButton(int const conditionIndex)
+{
+    HWND hWndButton = CreateWindow(
+        L"BUTTON", L"Delete Condition",
+        WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,
+        0, 0, 0, 0,
+        m_windowHandle,
+        (HMENU)ID_COMMAND_DELETE_CONDITION + conditionIndex,
+        NULL, NULL);
+    return hWndButton;
 }

@@ -40,19 +40,28 @@ void StringProperty::SetFromText(LPCTSTR text)
 
 void VariableProperty::SetFromText(LPCTSTR text)
 {
+    if (StrCmpW(L"", text) == 0)
+    {
+        m_value.m_int = 0;
+        return;
+    }
+
     if (StrCmpW(PROPERTY_BOOL_TRUE, text) == 0)
     {
         m_value.m_bool = true;
+        return;
     }
     else if (StrCmpW(PROPERTY_BOOL_FALSE, text) == 0)
     {
         m_value.m_bool = false;
+        return;
     }
 
     std::wstring wstrText(text);
     if (wstrText.find(L".") != std::wstring::npos)
     {
         m_value.m_float = std::stof(wstrText);
+        return;
     }
     m_value.m_int = std::stoi(wstrText);
 }

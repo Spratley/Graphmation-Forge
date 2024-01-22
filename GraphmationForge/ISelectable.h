@@ -11,7 +11,7 @@ public:
     void SetSelectionState(SelectionState const state);
     SelectionState const& GetSelectionState() const { return m_selectionState; }
 
-    std::unordered_map<int, Property*> const& GetProperties() const { return m_properties.GetProperties(); }
+    std::unordered_map<int, std::shared_ptr<Property>> const& GetProperties() const { return m_properties.GetProperties(); }
 
 protected:
     SelectionState m_selectionState;
