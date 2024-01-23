@@ -36,6 +36,7 @@ public:
     int OnOpenContextMenu(WIN32_CALLBACK_PARAMS);
     int OnWindowResize(WIN32_CALLBACK_PARAMS);
     int OnWindowClosed(WIN32_CALLBACK_PARAMS);
+    int OnKeyDown(WIN32_CALLBACK_PARAMS);
 
     void SetInstanceHandle(HINSTANCE const instanceHandle) { m_instanceHandle = instanceHandle; }
     bool InitInstance(int cmdShow);
@@ -62,6 +63,8 @@ private:
     void CreateBrush(int brushID, COLORREF brushColor);
     void CreateWindowFont(const wchar_t* fontName, int const fontSize, int const fontWeight);
     ATOM RegisterWindowClass(LPCWSTR className, HBRUSH backgroundBrush);
+
+    void DeleteSelected();
 
     // Creators
     void OnMainWindowCreated(WIN32_CALLBACK_PARAMS);

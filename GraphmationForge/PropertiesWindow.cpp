@@ -59,11 +59,24 @@ void PropertiesWindow::RebuildPropertiesContent()
 
 int PropertiesWindow::AddPropertiesToPanel(std::unordered_map<int, std::shared_ptr<Property>> propertiesSet, int contentOffset)
 {
+    // HACK: Store the type for the condition here, this only works because nothing else uses the variable type enum
+    VariableType::Enum selectedConditionType;
+
     for (auto const& property : propertiesSet)
     {
         std::shared_ptr<Property> propertyPtr = property.second;
-        PropertyType propertyType = propertyPtr->GetPropertyType();
 
+        if (std::shared_ptr<EnumProperty<VariableType, VariableType::Enum>> enumProperty = std::dynamic_pointer_cast<EnumProperty<VariableType, VariableType::Enum>>(propertyPtr))
+        {
+            selectedConditionType = enumProperty->m_value;
+        }
+
+        if (std::shared_ptr<VariableProperty> variableProperty = std::dynamic_pointer_cast<VariableProperty>(propertyPtr))
+        {
+            variableProperty->SetTypeState(selectedConditionType);
+        }
+
+        PropertyType propertyType = propertyPtr->GetPropertyType();
         if (propertyType == COMPOUND)
         {
             contentOffset += HandleConditionsProperty(propertyPtr, contentOffset);

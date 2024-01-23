@@ -4,6 +4,8 @@
 #include <string>
 #include <vector>
 
+#include "EnumHelper.h"
+
 enum PropertyType
 {
     TEXT_BOX
@@ -56,7 +58,14 @@ struct BoolProperty : public Property
 struct VariableProperty : public Property
 {
     void SetFromText(LPCTSTR text) override;
-    PropertyType const GetPropertyType() const override { return TEXT_BOX; }
+    PropertyType const GetPropertyType() const override;
+    std::vector<std::wstring> const GetDropdownItems() const override;
+
+    virtual std::wstring const GetTextItem() const;
+
+    void SetTypeState(VariableType::Enum type);
+
+    VariableType::Enum m_variableTypeState = VariableType::TYPE_INT;
 
     Variable m_value;
 };

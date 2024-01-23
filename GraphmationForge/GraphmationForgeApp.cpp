@@ -51,6 +51,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     case WM_CLOSE:
         retValue = instance->OnWindowClosed(hWnd, message, wParam, lParam);
         break;
+    case WM_KEYDOWN:
+        retValue = instance->OnKeyDown(hWnd, message, wParam, lParam);
+        break;
     }
 
     if (retValue == -1)
@@ -148,6 +151,9 @@ int GraphmationForgeApp::OnWindowCommand(WIN32_CALLBACK_PARAMS)
             DestroyWindow(hWnd);
         }
         break;
+    case IDM_NEW:
+        TryUnloadGraph();
+        break;
     case IDM_OPEN:
         OpenFile();
         break;
@@ -176,6 +182,7 @@ int GraphmationForgeApp::OnWindowCommand(WIN32_CALLBACK_PARAMS)
         if (HIWORD(wParam) == CBN_SELCHANGE)
         {
             m_propertiesWindow.PropagatePropertyValues();
+           // m_propertiesWindow.RebuildPropertiesContent(); // For some reason this causes a crash
         }
     case ID_COMMAND_NEW_CONDITION:
         if (HIWORD(wParam) == BN_CLICKED)
@@ -447,6 +454,16 @@ int GraphmationForgeApp::OnWindowClosed(WIN32_CALLBACK_PARAMS)
     return 1;
 }
 
+int GraphmationForgeApp::OnKeyDown(WIN32_CALLBACK_PARAMS)
+{
+    if (wParam == VK_BACK || wParam == VK_DELETE)
+    {
+        DeleteSelected();
+    }
+
+    return 0;
+}
+
 ATOM GraphmationForgeApp::RegisterWindowClass(LPCWSTR className, HBRUSH backgroundBrush)
 {
     WNDCLASSEXW wcex;
@@ -466,6 +483,44 @@ ATOM GraphmationForgeApp::RegisterWindowClass(LPCWSTR className, HBRUSH backgrou
     wcex.hIconSm = LoadIcon(wcex.hInstance, MAKEINTRESOURCE(IDI_SMALL));
 
     return RegisterClassExW(&wcex);
+}
+
+void GraphmationForgeApp::DeleteSelected()
+{
+    for (ISelectable* selected : m_selectedObjects)
+    {
+        if (Node* nodeSelectable = dynamic_cast<Node*>(selected))
+        {
+            for (int i = 0; i < m_nodes.size(); i++)
+            {
+                if (nodeSelectable == m_nodes[i])
+                {
+                    delete m_nodes[i];
+                    m_nodes.erase(m_nodes.begin() + i);
+                    break;
+                }
+            }
+        }
+        else if (Transition* transitionSelectable = dynamic_cast<Transition*>(selected))
+        {
+            for (int i = 0; i < m_transitions.size(); i++)
+            {
+                if (transitionSelectable == m_transitions[i])
+                {
+                    delete m_transitions[i];
+                    m_transitions.erase(m_transitions.begin() + i);
+                    break;
+                }
+            }
+        }
+    }
+
+    RECT mainWindowRect;
+    GetClientRect(m_mainWindowHandle, &mainWindowRect);
+    InvalidateRect(m_mainWindowHandle, &mainWindowRect, true);
+
+    m_selectedObjects.clear();
+    m_propertiesWindow.ClearPropertiesContent();
 }
 
 void GraphmationForgeApp::OnMainWindowCreated(WIN32_CALLBACK_PARAMS)
