@@ -28,6 +28,8 @@ struct Property
     virtual std::wstring const GetTextItem() const { return std::wstring(L""); }
 
     virtual void SetFromText(LPCTSTR text) = 0;
+
+    std::wstring m_name;
 };
 
 struct StringProperty : public Property
@@ -60,6 +62,7 @@ struct VariableProperty : public Property
     void SetFromText(LPCTSTR text) override;
     PropertyType const GetPropertyType() const override;
     std::vector<std::wstring> const GetDropdownItems() const override;
+    int const GetDropdownDefaultItem() const override;
 
     virtual std::wstring const GetTextItem() const;
 

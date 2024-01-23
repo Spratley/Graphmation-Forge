@@ -83,7 +83,7 @@ int PropertiesWindow::AddPropertiesToPanel(std::unordered_map<int, std::shared_p
             continue;
         }
 
-        HWND propertyWindowHandle = CreateContentWindow(L"Property", propertyType, contentOffset);
+        HWND propertyWindowHandle = CreateContentWindow(propertyPtr->m_name, propertyType, contentOffset);
         contentOffset += 35;
 
         // Initialize values
@@ -177,6 +177,12 @@ void PropertiesWindow::DeleteCondition(int conditionIndex)
 
 HWND PropertiesWindow::CreateContentWindow(std::wstring const & label, PropertyType propertyType, int const verticalOffset)
 {
+    HWND labelWindow = CreateWindow(WC_STATIC, label.c_str(),
+                                    WS_CHILD | WS_VISIBLE,
+                                    10, verticalOffset, 10 + PROPERTY_LABEL_WIDTH, 30, 
+                                    m_windowHandle, NULL, NULL, NULL);
+    m_additionalObjectsToRemove.push_back(labelWindow);
+
     HWND contentWindow = NULL;
 
     if (propertyType == TEXT_BOX)
@@ -184,7 +190,7 @@ HWND PropertiesWindow::CreateContentWindow(std::wstring const & label, PropertyT
         contentWindow = CreateWindow(WC_EDIT,
                 L"EditField",
                 WS_CHILD | WS_VISIBLE,
-                10, verticalOffset, PROPERTIES_PANEL_WIDTH - 20, 30,
+                20 + PROPERTY_LABEL_WIDTH, verticalOffset, PROPERTIES_PANEL_WIDTH - 30 - PROPERTY_LABEL_WIDTH, 30,
                 m_windowHandle,
                 (HMENU)ID_COMMAND_EDIT, NULL, NULL);
     }
@@ -193,7 +199,7 @@ HWND PropertiesWindow::CreateContentWindow(std::wstring const & label, PropertyT
         contentWindow = CreateWindow(WC_COMBOBOX,
             L"Dropdown Field",
             WS_CHILD | WS_VISIBLE | CBS_DROPDOWNLIST | CBS_HASSTRINGS,
-            10, verticalOffset, PROPERTIES_PANEL_WIDTH - 20, 500,
+            20 + PROPERTY_LABEL_WIDTH, verticalOffset, PROPERTIES_PANEL_WIDTH - 30 - PROPERTY_LABEL_WIDTH, 500,
             m_windowHandle,
             (HMENU)ID_COMMAND_DROPDOWN, NULL, NULL);
     }
@@ -252,12 +258,14 @@ HWND PropertiesWindow::CreateNewConditionButton()
 
 HWND PropertiesWindow::CreateDeleteConditionButton(int const conditionIndex)
 {
+    int commandID = ID_COMMAND_DELETE_CONDITION + conditionIndex;
+
     HWND hWndButton = CreateWindow(
         L"BUTTON", L"Delete Condition",
         WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,
         0, 0, 0, 0,
         m_windowHandle,
-        (HMENU)ID_COMMAND_DELETE_CONDITION + conditionIndex,
+        (HMENU)commandID,
         NULL, NULL);
     return hWndButton;
 }

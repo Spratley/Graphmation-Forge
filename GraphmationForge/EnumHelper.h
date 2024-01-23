@@ -2,9 +2,11 @@
 
 #include "framework.h"
 #include <string>
+#include "ParsingDefines.h"
 
 #define ENUM_TO_STRING_IMPL(enumItem) case enumItem ## : { return L ## #enumItem ; }
 #define ENUM_FROM_STRING_IMPL(enumItem) if (StrCmpW(cString, L ## #enumItem) == 0) { return enumItem; }
+#define ENUM_FROM_STRING_SPECIAL(enumItem, specialCase) if (StrCmpW(cString, specialCase) == 0) {return enumItem;}
 
 struct VariableType
 {
@@ -22,6 +24,13 @@ struct VariableType
         ENUM_FROM_STRING_IMPL(TYPE_BOOL)
         ENUM_FROM_STRING_IMPL(TYPE_FLOAT)
         ENUM_FROM_STRING_IMPL(TYPE_INT)
+
+        // Also accept condition types
+        ENUM_FROM_STRING_SPECIAL(TYPE_INT, CONDITION_OP_INT_W)
+        ENUM_FROM_STRING_SPECIAL(TYPE_FLOAT, CONDITION_OP_FLOAT_W)
+        ENUM_FROM_STRING_SPECIAL(TYPE_BOOL, CONDITION_OP_BOOL_W)
+        ENUM_FROM_STRING_SPECIAL(TYPE_BOOL, CONDITION_BOOLEAN_W)
+
         return TYPE_BOOL;
     }
 

@@ -152,7 +152,12 @@ int GraphmationForgeApp::OnWindowCommand(WIN32_CALLBACK_PARAMS)
         }
         break;
     case IDM_NEW:
-        TryUnloadGraph();
+        if (TryUnloadGraph())
+        {
+            RECT mainWindowRect;
+            GetClientRect(m_mainWindowHandle, &mainWindowRect);
+            InvalidateRect(m_mainWindowHandle, &mainWindowRect, true);
+        }
         break;
     case IDM_OPEN:
         OpenFile();

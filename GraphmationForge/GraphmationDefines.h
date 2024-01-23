@@ -7,5 +7,6 @@
 #define NODE_HEIGHT 50
 
 #define PROPERTIES_PANEL_WIDTH 300
+#define PROPERTY_LABEL_WIDTH 35
 
 #define WIN32_CALLBACK_PARAMS HWND const hWnd, UINT const message, WPARAM const wParam, LPARAM const lParam

@@ -17,12 +17,13 @@ PropertyContainer::~PropertyContainer()
     // }
 }
 
-void PropertyContainer::RegisterProperty(std::shared_ptr<Property> property, int const propertyID)
+void PropertyContainer::RegisterProperty(std::shared_ptr<Property> property, int const propertyID, std::wstring const& propertyName)
 {
     /*if (m_properties.count(propertyID) > 0)
     {
         delete m_properties[propertyID];
     }*/
+    property->m_name = propertyName;
     m_properties[propertyID] = property;
 }
  

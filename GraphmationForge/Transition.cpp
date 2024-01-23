@@ -192,8 +192,8 @@ void Transition::BuildPointArrow(POINT * outPoints, float directionX, float dire
 
 void Transition::InitProperties()
 {
-    m_properties.RegisterProperty(std::make_unique<StringProperty>(L"New Transition"), PropertyID_TransitionName);
-    m_properties.RegisterProperty(std::make_unique<VectorProperty<TransitionCondition>>(), PropertyID_Conditions);
+    m_properties.RegisterProperty(std::make_unique<StringProperty>(L"New Transition"), PropertyID_TransitionName, L"Name");
+    m_properties.RegisterProperty(std::make_unique<VectorProperty<TransitionCondition>>(), PropertyID_Conditions, L"THIS SHOULD NOT RENDER");
 }
 
 TransitionCondition::TransitionCondition()
@@ -383,8 +383,8 @@ Variable & TransitionCondition::GetVariable()
 
 void TransitionCondition::InitProperties()
 {
-    m_properties.RegisterProperty(std::make_shared<StringProperty>(L"VariableName"), PropertyID_VariableName);
-    m_properties.RegisterProperty(std::make_shared<EnumProperty<VariableType, VariableType::Enum>>(VariableType::TYPE_INT), PropertyID_ExpectedType);
-    m_properties.RegisterProperty(std::make_shared<EnumProperty<OperatorType, OperatorType::Enum>>(OperatorType::EQUAL), PropertyID_ConditionType);
-    m_properties.RegisterProperty(std::make_shared<VariableProperty>(), PropertyID_Variable);
+    m_properties.RegisterProperty(std::make_shared<StringProperty>(L"VariableName"), PropertyID_VariableName, L"Var");
+    m_properties.RegisterProperty(std::make_shared<EnumProperty<VariableType, VariableType::Enum>>(VariableType::TYPE_INT), PropertyID_ExpectedType, L"Type");
+    m_properties.RegisterProperty(std::make_shared<EnumProperty<OperatorType, OperatorType::Enum>>(OperatorType::EQUAL), PropertyID_ConditionType, L"Oper");
+    m_properties.RegisterProperty(std::make_shared<VariableProperty>(), PropertyID_Variable, L"Val");
 }

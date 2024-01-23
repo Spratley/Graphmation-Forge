@@ -12,7 +12,7 @@ public:
     PropertyContainer(PropertyContainer const& other);
     ~PropertyContainer();
 
-    void RegisterProperty(std::shared_ptr<Property> property, int const propertyID);
+    void RegisterProperty(std::shared_ptr<Property> property, int const propertyID, std::wstring const& propertyName);
     std::shared_ptr<Property> GetProperty(int const propertyID) const;
 
     template <typename T>

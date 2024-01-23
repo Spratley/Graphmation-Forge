@@ -28,10 +28,18 @@
 #define OPERATOR_LESS "<"
 #define OPERATOR_LESS_EQUAL "<="
 
-#define CONDITION_OP_INT "OperatorInt"
-#define CONDITION_OP_FLOAT "OperatorFloat"
-#define CONDITION_OP_BOOL "OperatorBool"
-#define CONDITION_BOOLEAN "Boolean"
+#define CONCAT_(A, B) A ## B
+#define CONCAT(A, B) CONCAT_(A, B)
+
+#define CONDITION_OP_INT    "OperatorInt"
+#define CONDITION_OP_FLOAT  "OperatorFloat"
+#define CONDITION_OP_BOOL   "OperatorBool"
+#define CONDITION_BOOLEAN   "Boolean"
+
+#define CONDITION_OP_INT_W      CONCAT(L,CONDITION_OP_INT)
+#define CONDITION_OP_FLOAT_W    CONCAT(L,CONDITION_OP_FLOAT)
+#define CONDITION_OP_BOOL_W     CONCAT(L,CONDITION_OP_BOOL)
+#define CONDITION_BOOLEAN_W     CONCAT(L,CONDITION_BOOLEAN)
 
 #define SET_DATA(object, name, type, value) {type * outValue = new type ; \
 outValue ->m_value = value ;\

@@ -78,9 +78,9 @@ void Node::SetAnimationName(std::wstring const & animationName)
 
 void Node::InitProperties()
 {
-    m_properties.RegisterProperty(std::make_shared<StringProperty>(L"New Node"), PropertyID_NodeName);
-    m_properties.RegisterProperty(std::make_shared<StringProperty>(L""), PropertyID_AssociatedAnimation);
-    m_properties.RegisterProperty(std::make_shared<BoolProperty>(false), PropertyID_Loop);
+    m_properties.RegisterProperty(std::make_shared<StringProperty>(L"New Node"), PropertyID_NodeName, L"Name");
+    m_properties.RegisterProperty(std::make_shared<StringProperty>(L""), PropertyID_AssociatedAnimation, L"Anim");
+    m_properties.RegisterProperty(std::make_shared<BoolProperty>(false), PropertyID_Loop, L"Loop");
 }
 
 void Node::SetNodeName(std::wstring const& name)

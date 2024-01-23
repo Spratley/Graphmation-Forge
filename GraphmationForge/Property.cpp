@@ -85,6 +85,15 @@ std::vector<std::wstring> const VariableProperty::GetDropdownItems() const
     };
 }
 
+int const VariableProperty::GetDropdownDefaultItem() const
+{
+    if (m_value.m_bool)
+    {
+        return 0;
+    }
+    return 1;
+}
+
 std::wstring const VariableProperty::GetTextItem() const
 {
     if (m_variableTypeState == VariableType::TYPE_FLOAT)
