@@ -6,6 +6,7 @@
 #include "Timer.h"
 #include "PropertiesWindow.h"
 #include "FakeTransition.h"
+#include "JParse/JParse.h"
 
 #include <unordered_map>
 #include <unordered_set>

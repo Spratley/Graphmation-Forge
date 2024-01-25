@@ -4,6 +4,7 @@
 #define STATE_TYPE "type"
 #define STATE_NAME "name"
 #define STATE_ANIM_NAME "animationName"
+#define STATE_SELECTOR_ANIMS "animations"
 #define STATE_LOOP "loop"
 #define STATE_POS_X "positionX"
 #define STATE_POS_Y "positionY"
@@ -21,6 +22,7 @@
 #define CONDITION_VARIABLE_NAME "variableName"
 
 #define TRY_PARSE(object, name, type, defaultValue) (object ->Has( name )) ? object ->Get< type >( name )->m_value : defaultValue ;
+#define TRY_GET_CHILD(object, name, type) (object->Has(name)) ? object->Get<type>(name) : nullptr;
 
 #define OPERATOR_EQUAL "=="
 #define OPERATOR_NOT_EQUAL "!="
@@ -46,6 +48,6 @@
 outValue ->m_value = value ;\
 object ->Set( name , outValue );}
 
-#define ADD_DATA(object, name, type, value) {type * outValue = new type ;} \
+#define ADD_DATA(object, type, value) {type * outValue = new type ; \
 outValue ->m_value = value ;\
-object ->Add( name , outValue );}
+object ->Add(outValue);}

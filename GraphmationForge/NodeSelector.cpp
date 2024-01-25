@@ -4,16 +4,18 @@
 
 void NodeSelector::InitProperties()
 {
+    Node::InitProperties();
     m_type = NodeType::SELECTOR;
-    m_properties.RegisterProperty(std::make_shared<VectorProperty<std::wstring>>(), PropertyID_AssociatedAnimations, L"Anim");
+    m_properties.RegisterProperty(std::make_shared<StringProperty>(L"NULL"), PropertyID_VariableName, L"Var");
+    m_properties.RegisterProperty(std::make_shared<VectorProperty<std::shared_ptr<StringProperty>>>(), PropertyID_AssociatedAnimations, L"Anim");
 }
 
-std::vector<std::wstring> const & NodeSelector::GetAnimations() const
+std::vector<std::shared_ptr<StringProperty>> const & NodeSelector::GetAnimations() const
 {
-    return m_properties.GetPropertyPtr<VectorProperty<std::wstring>>(PropertyID_AssociatedAnimations)->m_value;
+    return m_properties.GetPropertyPtr<VectorProperty<std::shared_ptr<StringProperty>>>(PropertyID_AssociatedAnimations)->m_value;
 }
 
-std::vector<std::wstring>& NodeSelector::GetAnimations()
+std::vector<std::shared_ptr<StringProperty>>& NodeSelector::GetAnimations()
 {
-    return m_properties.GetPropertyPtr<VectorProperty<std::wstring>>(PropertyID_AssociatedAnimations)->m_value;
+    return m_properties.GetPropertyPtr<VectorProperty<std::shared_ptr<StringProperty>>>(PropertyID_AssociatedAnimations)->m_value;
 }

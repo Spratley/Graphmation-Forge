@@ -28,6 +28,12 @@
     <Filter Include="Source Files\JParse">
       <UniqueIdentifier>{4dec280c-b194-4188-b830-92e38d550f33}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\Application\Node">
+      <UniqueIdentifier>{5cb2197b-e3eb-4eec-89b1-18eacfc730de}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Application\Node">
+      <UniqueIdentifier>{7cfa2343-ebd1-457a-b4c5-42346e0d7a0d}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="targetver.h">
@@ -46,9 +52,6 @@
       <Filter>Header Files\Application</Filter>
     </ClInclude>
     <ClInclude Include="GraphDrawer.h">
-      <Filter>Header Files\Application</Filter>
-    </ClInclude>
-    <ClInclude Include="Node.h">
       <Filter>Header Files\Application</Filter>
     </ClInclude>
     <ClInclude Include="GraphmationDefines.h">
@@ -96,6 +99,15 @@
     <ClInclude Include="FakeTransition.h">
       <Filter>Header Files\Application</Filter>
     </ClInclude>
+    <ClInclude Include="Node.h">
+      <Filter>Header Files\Application\Node</Filter>
+    </ClInclude>
+    <ClInclude Include="NodeDefault.h">
+      <Filter>Header Files\Application\Node</Filter>
+    </ClInclude>
+    <ClInclude Include="NodeSelector.h">
+      <Filter>Header Files\Application\Node</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="GraphmationForge.rc">
@@ -115,9 +127,6 @@
       <Filter>Source Files\Application</Filter>
     </ClCompile>
     <ClCompile Include="GraphmationForgeApp.cpp">
-      <Filter>Source Files\Application</Filter>
-    </ClCompile>
-    <ClCompile Include="Node.cpp">
       <Filter>Source Files\Application</Filter>
     </ClCompile>
     <ClCompile Include="ISelectable.cpp">
@@ -152,6 +161,15 @@
     </ClCompile>
     <ClCompile Include="FakeTransition.cpp">
       <Filter>Source Files\Application</Filter>
+    </ClCompile>
+    <ClCompile Include="Node.cpp">
+      <Filter>Source Files\Application\Node</Filter>
+    </ClCompile>
+    <ClCompile Include="NodeDefault.cpp">
+      <Filter>Source Files\Application\Node</Filter>
+    </ClCompile>
+    <ClCompile Include="NodeSelector.cpp">
+      <Filter>Source Files\Application\Node</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

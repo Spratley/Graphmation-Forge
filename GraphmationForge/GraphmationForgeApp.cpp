@@ -127,6 +127,7 @@ int GraphmationForgeApp::OnWindowCommand(WIN32_CALLBACK_PARAMS)
     if (PropertiesWindow::IsDeleteConditionButton(commandID))
     {
         m_propertiesWindow.DeleteCondition(commandID - ID_COMMAND_DELETE_CONDITION);
+        m_propertiesWindow.DeleteAnimation(commandID - ID_COMMAND_DELETE_CONDITION);
         m_propertiesWindow.RebuildPropertiesContent();
         return 0;
     }
@@ -158,11 +159,16 @@ int GraphmationForgeApp::OnWindowCommand(WIN32_CALLBACK_PARAMS)
         SaveAsFile();
         break;
     case IDM_INSERT_ANIMSTATE:
-        CreateNode();
+        CreateNode(NodeType::NORMAL);
+        break;
+    case ID_INSERT_SELECTORANIMATIONSTATE:
+        CreateNode(NodeType::SELECTOR);
         break;
     case ID_CONTEXT_CREATE_ANIMSTATE:
-        CreateNodeAtMousePos();
+        CreateNodeAtMousePos(NodeType::NORMAL);
         break;
+    case ID_CONTEXT_CREATE_ANIMSTATE_SELECTOR:
+        CreateNodeAtMousePos(NodeType::SELECTOR);
     case ID_CONTEXT_CREATE_TRANSITION:
         BeginCreateTransition();
         break;
@@ -186,6 +192,12 @@ int GraphmationForgeApp::OnWindowCommand(WIN32_CALLBACK_PARAMS)
                 if (Transition* transition = dynamic_cast<Transition*>(*m_selectedObjects.begin()))
                 {
                     transition->AddNewCondition();
+                    m_propertiesWindow.RebuildPropertiesContent();
+                }
+                if (NodeSelector* selectorNode = dynamic_cast<NodeSelector*>(*m_selectedObjects.begin()))
+                {
+                    std::vector<std::shared_ptr<StringProperty>>& anims = selectorNode->GetAnimations();
+                    anims.push_back(std::make_shared<StringProperty>(L"NULL"));
                     m_propertiesWindow.RebuildPropertiesContent();
                 }
             }
@@ -387,6 +399,7 @@ int GraphmationForgeApp::OnOpenContextMenu(WIN32_CALLBACK_PARAMS)
 
         HMENU hPopupMenu = CreatePopupMenu();
         InsertMenu(hPopupMenu, 0, MF_BYPOSITION | MF_STRING, ID_CONTEXT_CREATE_ANIMSTATE, L"Insert Animation State");
+        InsertMenu(hPopupMenu, 0, MF_BYPOSITION | MF_STRING, ID_CONTEXT_CREATE_ANIMSTATE_SELECTOR, L"Insert Selector Animation State");
         SetForegroundWindow(hWnd);
         TrackPopupMenu(hPopupMenu, TPM_BOTTOMALIGN | TPM_LEFTALIGN, mousePos.x, mousePos.y, 0, hWnd, NULL);
         return 0;
@@ -862,10 +875,34 @@ bool GraphmationForgeApp::SaveJSON(std::string const& path)
         statesArray->Add(stateObject);
 
         SET_DATA(stateObject, STATE_NAME, JParse::String, StringConvert::ToStr(state->GetNodeName()));
-        SET_DATA(stateObject, STATE_ANIM_NAME, JParse::String, StringConvert::ToStr(state->GetAnimationName()));
         SET_DATA(stateObject, STATE_LOOP, JParse::Boolean, state->GetLoop());
         SET_DATA(stateObject, STATE_POS_X, JParse::Integer, state->GetNodePosition().x);
         SET_DATA(stateObject, STATE_POS_Y, JParse::Integer, state->GetNodePosition().y);
+
+        // Node specific data
+        switch (state->GetNodeType())
+        {
+        default:
+        case NodeType::NORMAL:
+        {
+            NodeDefault const* const defaultNode = static_cast<NodeDefault const* const>(state);
+            SET_DATA(stateObject, STATE_ANIM_NAME, JParse::String, StringConvert::ToStr(defaultNode->GetAnimationName()));
+        }
+        break;
+        case NodeType::SELECTOR:
+        {
+            NodeSelector const* const selectorNode = static_cast<NodeSelector const* const>(state);
+            std::vector<std::shared_ptr<StringProperty>> const& animations = selectorNode->GetAnimations();
+
+            JParse::Array* animationsArray = new JParse::Array;
+            for (std::shared_ptr<StringProperty> const& str : animations)
+            {
+                ADD_DATA(animationsArray, JParse::String, StringConvert::ToStr(str->m_value));
+            }
+            stateObject->Set(STATE_SELECTOR_ANIMS, animationsArray);
+        }
+        break;
+        }
 
         // Build transition reference array
         JParse::Array* transitionsFromState = new JParse::Array;
@@ -1051,11 +1088,10 @@ Node* const GraphmationForgeApp::CreateNode(NodeType::Enum const nodeType)
         node = new NodeDefault(m_mainWindowHandle, nodeWindowHandle);
         break;
     case NodeType::SELECTOR:
-        node = new NodeDefault(m_mainWindowHandle, nodeWindowHandle);
+        node = new NodeSelector(m_mainWindowHandle, nodeWindowHandle);
         break;
     }
-
-    Node* node = new Node(m_mainWindowHandle, nodeWindowHandle);
+    node->InitProperties();
     m_nodes.push_back(node);
 
     POINT p;
@@ -1097,7 +1133,21 @@ Node * const GraphmationForgeApp::CreateNode(JParse::Object const * const nodeDa
     break;
     case NodeType::SELECTOR:
     {
-        // TODO: GET THE ARRAY OF ANIMATION NAMES
+        JParse::Array* animationNamesArray = TRY_GET_CHILD(nodeData, STATE_SELECTOR_ANIMS, JParse::Array);
+        if (!animationNamesArray)
+        {
+            break;
+        }
+
+        NodeSelector* selectorNode = static_cast<NodeSelector*>(node);
+        std::vector<std::shared_ptr<StringProperty>>& nodeAnims = selectorNode->GetAnimations();
+        for (JParse::Item* animNameObj : animationNamesArray->m_contents)
+        {
+            JParse::String* animName = animNameObj->GetAs<JParse::String>();
+
+            std::shared_ptr<StringProperty> strProperty = std::make_shared<StringProperty>(StringConvert::ToWStr(animName->m_value));
+            nodeAnims.push_back(strProperty);
+        }
     }
     break;
     }

@@ -6,6 +6,8 @@
 
 #include "Transition.h"
 
+#include "NodeSelector.h"
+
 PropertiesWindow::PropertiesWindow(HWND hWnd, HWND parentHandle)
 : m_windowHandle(hWnd)
 , m_parentHandle(parentHandle)
@@ -76,45 +78,58 @@ int PropertiesWindow::AddPropertiesToPanel(std::unordered_map<int, std::shared_p
             variableProperty->SetTypeState(selectedConditionType);
         }
 
-        PropertyType propertyType = propertyPtr->GetPropertyType();
-        if (propertyType == COMPOUND)
-        {
-            contentOffset += HandleConditionsProperty(propertyPtr, contentOffset);
-            continue;
-        }
-
-        HWND propertyWindowHandle = CreateContentWindow(propertyPtr->m_name, propertyType, contentOffset);
-        contentOffset += 35;
-
-        // Initialize values
-        switch (propertyType)
-        {
-        case DROPDOWN:
-        {
-            // Set potential values in dropdown
-            std::vector <std::wstring> dropdownValues = propertyPtr->GetDropdownItems();
-            for (std::wstring const& dropdownItem : dropdownValues)
-            {
-                SendMessage(propertyWindowHandle, (UINT)CB_ADDSTRING, (WPARAM)0, (LPARAM)dropdownItem.c_str());
-            }
-
-            SendMessage(propertyWindowHandle, (UINT)CB_SETCURSEL, (WPARAM)propertyPtr->GetDropdownDefaultItem(), (LPARAM)0);
-            break;
-        }
-        case TEXT_BOX:
-        {
-            SetWindowText(propertyWindowHandle, propertyPtr->GetTextItem().c_str());
-            break;
-        }
-        }
-
-        // Add the new content to my memory
-        ContentProperty content;
-        content.m_windowHandle = propertyWindowHandle;
-        content.m_connectedProperty = propertyPtr;
-        m_contents.push_back(content);
+        contentOffset = AddPropertyToPanel(propertyPtr, contentOffset);
     }
 
+    return contentOffset;
+}
+
+int PropertiesWindow::AddPropertyToPanel(std::shared_ptr<Property> const& p, int contentOffset)
+{
+    PropertyType propertyType = p->GetPropertyType();
+    if (propertyType == COMPOUND)
+    {
+        if (NodeSelector* selectorNode = dynamic_cast<NodeSelector*>(m_selectedObject))
+        {
+            contentOffset += HandleSelectorNodeAnimsProperty(p, contentOffset);
+        }
+        else
+        {
+            contentOffset += HandleConditionsProperty(p, contentOffset);
+        }
+        return contentOffset;
+    }
+
+    HWND propertyWindowHandle = CreateContentWindow(p->m_name, propertyType, contentOffset);
+    contentOffset += 35;
+
+    // Initialize values
+    switch (propertyType)
+    {
+    case DROPDOWN:
+    {
+        // Set potential values in dropdown
+        std::vector <std::wstring> dropdownValues = p->GetDropdownItems();
+        for (std::wstring const& dropdownItem : dropdownValues)
+        {
+            SendMessage(propertyWindowHandle, (UINT)CB_ADDSTRING, (WPARAM)0, (LPARAM)dropdownItem.c_str());
+        }
+
+        SendMessage(propertyWindowHandle, (UINT)CB_SETCURSEL, (WPARAM)p->GetDropdownDefaultItem(), (LPARAM)0);
+        break;
+    }
+    case TEXT_BOX:
+    {
+        SetWindowText(propertyWindowHandle, p->GetTextItem().c_str());
+        break;
+    }
+    }
+
+    // Add the new content to my memory
+    ContentProperty content;
+    content.m_windowHandle = propertyWindowHandle;
+    content.m_connectedProperty = p;
+    m_contents.push_back(content);
     return contentOffset;
 }
 
@@ -173,6 +188,22 @@ void PropertiesWindow::DeleteCondition(int conditionIndex)
     }
 
     transition->DeleteCondition(conditionIndex);
+}
+
+void PropertiesWindow::DeleteAnimation(int conditionIndex)
+{
+    NodeSelector* selectorNode = dynamic_cast<NodeSelector*>(m_selectedObject);
+    if (!selectorNode)
+    {
+        return;
+    }
+
+    std::vector<std::shared_ptr<StringProperty>>& anims = selectorNode->GetAnimations();
+    
+    if (conditionIndex < anims.size())
+    {
+        anims.erase(anims.begin() + conditionIndex);
+    }
 }
 
 HWND PropertiesWindow::CreateContentWindow(std::wstring const & label, PropertyType propertyType, int const verticalOffset)
@@ -243,6 +274,42 @@ int PropertiesWindow::HandleConditionsProperty(std::shared_ptr<Property> const p
     return postOffset;
 }
 
+int PropertiesWindow::HandleSelectorNodeAnimsProperty(std::shared_ptr<Property> const property, int const contentOffset)
+{
+    int postOffset = contentOffset;
+
+    std::shared_ptr<VectorProperty<std::shared_ptr<StringProperty>>> animationsProperty = std::dynamic_pointer_cast<VectorProperty<std::shared_ptr<StringProperty>>>(property);
+    if (!animationsProperty)
+    {
+        return postOffset;
+    }
+
+    std::vector<std::shared_ptr<StringProperty>> const& animations = animationsProperty->m_value;
+
+    postOffset += 10;
+
+    // Create fields for all animation properties
+    int i = 0;
+    for (std::shared_ptr<StringProperty> const& animation : animations)
+    {
+        postOffset = AddPropertyToPanel(animation, postOffset);
+
+        HWND deleteButton = CreateDeleteAnimationButton(i);
+        m_additionalObjectsToRemove.push_back(deleteButton);
+        MoveWindow(deleteButton, 10, postOffset, PROPERTIES_PANEL_WIDTH - 20, 30, true);
+
+        postOffset += 45;
+        i++;
+    }
+
+    // Create ADD button for conditions
+    HWND newButton = CreateNewAnimationButton();
+    m_additionalObjectsToRemove.push_back(newButton);
+    MoveWindow(newButton, 10, postOffset, PROPERTIES_PANEL_WIDTH - 20, 30, true);
+    postOffset += 35;
+    return postOffset;
+}
+
 HWND PropertiesWindow::CreateNewConditionButton()
 {
     HWND hWndButton = CreateWindow(
@@ -262,6 +329,33 @@ HWND PropertiesWindow::CreateDeleteConditionButton(int const conditionIndex)
 
     HWND hWndButton = CreateWindow(
         L"BUTTON", L"Delete Condition",
+        WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,
+        0, 0, 0, 0,
+        m_windowHandle,
+        (HMENU)commandID,
+        NULL, NULL);
+    return hWndButton;
+}
+
+HWND PropertiesWindow::CreateNewAnimationButton()
+{
+    HWND hWndButton = CreateWindow(
+        L"BUTTON", L"New Animation",
+        WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,
+        0, 0, 0, 0,
+        m_windowHandle,
+        (HMENU)ID_COMMAND_NEW_CONDITION,
+        NULL, NULL);
+
+    return hWndButton;
+}
+
+HWND PropertiesWindow::CreateDeleteAnimationButton(int const conditionIndex)
+{
+    int commandID = ID_COMMAND_DELETE_CONDITION + conditionIndex;
+
+    HWND hWndButton = CreateWindow(
+        L"BUTTON", L"Delete Animation",
         WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,
         0, 0, 0, 0,
         m_windowHandle,

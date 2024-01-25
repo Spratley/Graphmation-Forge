@@ -31,6 +31,7 @@ public:
     void RebuildPropertiesContent();
 
     int AddPropertiesToPanel(std::unordered_map<int, std::shared_ptr<Property>> propertiesSet, int contentOffset);
+    int AddPropertyToPanel(std::shared_ptr<Property> const& p, int contentOffset);
 
     void Paint(WIN32_CALLBACK_PARAMS);
 
@@ -41,14 +42,18 @@ public:
     static bool const IsDeleteConditionButton(int const commandID) { return commandID >= 300 && commandID < 400; }
 
     void DeleteCondition(int conditionIndex);
+    void DeleteAnimation(int conditionIndex);
 
 private:
     HWND CreateContentWindow(std::wstring const& label, PropertyType propertyType, int const verticalOffsets);
 
     int HandleConditionsProperty(std::shared_ptr<Property> const property, int const contentOffset);
+    int HandleSelectorNodeAnimsProperty(std::shared_ptr<Property> const property, int const contentOffset);
 
     HWND CreateNewConditionButton();
     HWND CreateDeleteConditionButton(int const conditionID);
+    HWND CreateNewAnimationButton();
+    HWND CreateDeleteAnimationButton(int const conditionID);
 
 private:
     HWND m_parentHandle;

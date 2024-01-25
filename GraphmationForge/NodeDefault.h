@@ -12,12 +12,11 @@ public:
 
     std::wstring const& GetAnimationName() const;
 
-protected:
     void InitProperties() override;
 
 private:
     enum
     {
-        PropertyID_AssociatedAnimation
+        PropertyID_AssociatedAnimation = NumBaseNodeProperties
     };
 };

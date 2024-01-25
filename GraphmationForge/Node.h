@@ -32,13 +32,16 @@ public:
     std::wstring const& GetNodeName() const;
     bool const GetLoop() const;
 
-protected:
+    NodeType::Enum const& GetNodeType() const { return m_type; }
+
     virtual void InitProperties();
 
+protected:
     enum
     {
         PropertyID_NodeName,
-        PropertyID_Loop
+        PropertyID_Loop,
+        NumBaseNodeProperties
     };
 
 protected:

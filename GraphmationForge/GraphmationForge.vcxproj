@@ -167,6 +167,8 @@
     <ClInclude Include="ISelectable.h" />
     <ClInclude Include="JParse\JParse.h" />
     <ClInclude Include="Node.h" />
+    <ClInclude Include="NodeDefault.h" />
+    <ClInclude Include="NodeSelector.h" />
     <ClInclude Include="ParsingDefines.h" />
     <ClInclude Include="PropertiesWindow.h" />
     <ClInclude Include="Property.h" />
@@ -187,6 +189,8 @@
     <ClCompile Include="ISelectable.cpp" />
     <ClCompile Include="JParse\JParse.cpp" />
     <ClCompile Include="Node.cpp" />
+    <ClCompile Include="NodeDefault.cpp" />
+    <ClCompile Include="NodeSelector.cpp" />
     <ClCompile Include="PropertiesWindow.cpp" />
     <ClCompile Include="Property.cpp" />
     <ClCompile Include="PropertyContainer.cpp" />

@@ -16,7 +16,10 @@ public:
     std::shared_ptr<Property> GetProperty(int const propertyID) const;
 
     template <typename T>
-    std::shared_ptr<T> GetPropertyPtr(int const propertyID) const;
+    std::shared_ptr<T> GetPropertyPtr(int const propertyID);
+
+    template <typename T>
+    std::shared_ptr<T> const GetPropertyPtr(int const propertyID) const;
 
     std::unordered_map<int, std::shared_ptr<Property>> const& GetProperties() const { return m_properties; }
 
@@ -25,7 +28,14 @@ private:
 };
 
 template<typename T>
-inline std::shared_ptr<T> PropertyContainer::GetPropertyPtr(int const propertyID) const
+inline std::shared_ptr<T> PropertyContainer::GetPropertyPtr(int const propertyID)
 {
     return std::static_pointer_cast<T>(GetProperty(propertyID));
 }
+
+template<typename T>
+inline std::shared_ptr<T> const PropertyContainer::GetPropertyPtr(int const propertyID) const
+{
+    return std::static_pointer_cast<T>(GetProperty(propertyID));
+}
+

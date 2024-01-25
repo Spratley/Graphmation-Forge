@@ -100,6 +100,7 @@ struct NodeType
         LPCTSTR cString = string.c_str();
         ENUM_FROM_STRING_IMPL(NORMAL)
         ENUM_FROM_STRING_IMPL(SELECTOR)
+        return NORMAL;
     }
 
     static inline std::wstring const ToString(Enum const& e)

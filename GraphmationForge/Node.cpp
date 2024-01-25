@@ -8,7 +8,6 @@ Node::Node(HWND const parentWindowHandle, HWND const windowHandle)
 , m_position()
 {
     m_paintRegion = CreateRectRgn(0, 0, NODE_MIN_WIDTH, NODE_HEIGHT);
-    InitProperties();
 }
 
 Node::~Node()
@@ -95,5 +94,5 @@ bool const Node::GetLoop() const
 void Node::InitProperties()
 {
     m_properties.RegisterProperty(std::make_shared<StringProperty>(L"New Node"), PropertyID_NodeName, L"Name");
-    m_properties.RegisterProperty(std::make_shared<BoolProperty>(false), PropertyID_Loop, L"Loop");
+    m_properties.RegisterProperty(std::make_shared<BoolProperty>(true), PropertyID_Loop, L"Loop"); // Default to true since we use looping animations more
 }
