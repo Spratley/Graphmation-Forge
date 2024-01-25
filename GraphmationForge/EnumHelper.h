@@ -86,3 +86,29 @@ struct OperatorType
         }
     }
 };
+
+struct NodeType
+{
+    enum Enum
+    {
+        NORMAL,
+        SELECTOR
+    };
+
+    static inline Enum const FromString(std::wstring const& string)
+    {
+        LPCTSTR cString = string.c_str();
+        ENUM_FROM_STRING_IMPL(NORMAL)
+        ENUM_FROM_STRING_IMPL(SELECTOR)
+    }
+
+    static inline std::wstring const ToString(Enum const& e)
+    {
+        switch (e)
+        {
+        default:
+        ENUM_TO_STRING_IMPL(NORMAL)
+        ENUM_TO_STRING_IMPL(SELECTOR)
+        }
+    }
+};

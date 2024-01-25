@@ -71,18 +71,6 @@ void Node::SetDragged(POINT mousePos)
     SetPosition(newPos);
 }
 
-void Node::SetAnimationName(std::wstring const & animationName)
-{
-    m_properties.GetPropertyPtr<StringProperty>(PropertyID_AssociatedAnimation)->m_value = animationName;
-}
-
-void Node::InitProperties()
-{
-    m_properties.RegisterProperty(std::make_shared<StringProperty>(L"New Node"), PropertyID_NodeName, L"Name");
-    m_properties.RegisterProperty(std::make_shared<StringProperty>(L""), PropertyID_AssociatedAnimation, L"Anim");
-    m_properties.RegisterProperty(std::make_shared<BoolProperty>(false), PropertyID_Loop, L"Loop");
-}
-
 void Node::SetNodeName(std::wstring const& name)
 {
     m_properties.GetPropertyPtr<StringProperty>(PropertyID_NodeName)->m_value = name;
@@ -99,12 +87,13 @@ std::wstring const & Node::GetNodeName() const
     return m_properties.GetPropertyPtr<StringProperty>(PropertyID_NodeName)->m_value;
 }
 
-std::wstring const & Node::GetAnimationName() const
-{
-    return m_properties.GetPropertyPtr<StringProperty>(PropertyID_AssociatedAnimation)->m_value;
-}
-
 bool const Node::GetLoop() const
 {
     return m_properties.GetPropertyPtr<BoolProperty>(PropertyID_Loop)->m_value;
+}
+
+void Node::InitProperties()
+{
+    m_properties.RegisterProperty(std::make_shared<StringProperty>(L"New Node"), PropertyID_NodeName, L"Name");
+    m_properties.RegisterProperty(std::make_shared<BoolProperty>(false), PropertyID_Loop, L"Loop");
 }

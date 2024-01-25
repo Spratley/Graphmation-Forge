@@ -1,6 +1,7 @@
 #pragma once
 
 #define STATES_ROOT "states"
+#define STATE_TYPE "type"
 #define STATE_NAME "name"
 #define STATE_ANIM_NAME "animationName"
 #define STATE_LOOP "loop"

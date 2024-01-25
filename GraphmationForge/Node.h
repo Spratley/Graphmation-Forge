@@ -5,6 +5,8 @@
 
 #include <string>
 
+#include "EnumHelper.h"
+
 class Node : public ISelectable
 {
 public:
@@ -23,17 +25,24 @@ public:
     void StartDrag(POINT mousePos);
     void SetDragged(POINT mousePos);
 
-    // Properties    
+    // Properties
     void SetNodeName(std::wstring const& name);
-    void SetAnimationName(std::wstring const& animationName);
     void SetLoop(bool const loop);
 
     std::wstring const& GetNodeName() const;
-    std::wstring const& GetAnimationName() const;
     bool const GetLoop() const;
 
-private:
-    void InitProperties();
+protected:
+    virtual void InitProperties();
+
+    enum
+    {
+        PropertyID_NodeName,
+        PropertyID_Loop
+    };
+
+protected:
+    NodeType::Enum m_type = NodeType::NORMAL;
 
 private:
     HWND m_windowHandle;
@@ -42,15 +51,4 @@ private:
 
     POINT m_dragStartRelativePosition;
     POINT m_dragStartPos;
-
-    // Properties
-    // std::wstring m_nodeName;
-    // std::wstring m_associatedAnimation;
-    // bool m_loop;
-    enum
-    {
-        PropertyID_NodeName,
-        PropertyID_AssociatedAnimation,
-        PropertyID_Loop
-    };
 };

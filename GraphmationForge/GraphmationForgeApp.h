@@ -46,8 +46,9 @@ public:
     void CreateFonts();
     void RegisterWindowClasses();
 
-    Node* const CreateNode();
-    Node* const CreateNodeAtMousePos();
+    Node* const CreateNode(NodeType::Enum const nodeType);
+    Node* const CreateNode(JParse::Object const* const nodeData);
+    Node* const CreateNodeAtMousePos(NodeType::Enum const nodeType);
 
     Transition* const CreateTransition(unsigned int const fromNodeID, unsigned int const toNodeID);
     Transition* const CreateTransition(Node* const fromNode, Node* const toNode);

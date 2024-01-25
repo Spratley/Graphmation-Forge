@@ -1,7 +1,8 @@
 #include "GraphmationForgeApp.h"
 
 #include "GraphmationColors.h"
-#include "Node.h"
+#include "NodeDefault.h"
+#include "NodeSelector.h"
 #include "Transition.h"
 #include "StringConvert.h"
 
@@ -78,18 +79,9 @@ int GraphmationForgeApp::OnWindowCreated(WIN32_CALLBACK_PARAMS)
 {
     if (hWnd == m_mainWindowHandle)
     {
-        // We're creating the main window
         OnMainWindowCreated(hWnd, message, wParam, lParam);
         return 0;
     }
-
-    // int id = GetWindowLong(hWnd, GWL_ID);
-    // switch (id)
-    // {
-    // default:
-    //     return -1;
-    // }
-
     return 0;
 }
 
@@ -103,8 +95,6 @@ int GraphmationForgeApp::OnPaintCustomBackground(WIN32_CALLBACK_PARAMS)
     default:
         return -1;
     }
-
-    return 0;
 }
 
 int GraphmationForgeApp::OnWindowPaint(WIN32_CALLBACK_PARAMS)
@@ -126,7 +116,6 @@ int GraphmationForgeApp::OnWindowPaint(WIN32_CALLBACK_PARAMS)
     default:
         return -1;
     }
-
     return 0;
 }
 
@@ -225,17 +214,6 @@ int GraphmationForgeApp::OnLeftMouseButtonDown(WIN32_CALLBACK_PARAMS)
 
         return 0;
     }
-
-
-
-
-
-
-    // if (hWnd != m_mainWindowHandle)
-    // {
-    //     // Only interpret mouse button down for the main window
-    //     return -1;
-    // }
 
     if (hWnd == m_propertiesWindow.GetHWND())
     {
@@ -389,11 +367,6 @@ int GraphmationForgeApp::OnMouseMoved(WIN32_CALLBACK_PARAMS)
         m_createTransitionFakeTransition.ForceInvalidateCurrentPaintRegion();
         m_createTransitionFakeTransition.SetToPoint(mousePos);
         m_createTransitionFakeTransition.InvalidatePaintArea();
-        
-        // Lets try invalidating the entire client rect
-        // RECT mainWindowRect;
-        // GetClientRect(m_mainWindowHandle, &mainWindowRect);
-        // InvalidateRect(m_mainWindowHandle, &mainWindowRect, true);
     }
 
 
@@ -770,19 +743,7 @@ bool GraphmationForgeApp::LoadJSON(std::string filepath)
     for (JParse::Item* state : states->m_contents)
     {
         JParse::Object* stateObject = state->GetAs<JParse::Object>();
-        // Load state data
-        std::string nodeName = TRY_PARSE(stateObject, STATE_NAME, JParse::String, "New State");
-        std::string animName = TRY_PARSE(stateObject, STATE_ANIM_NAME, JParse::String, "NULL");
-        bool loop = TRY_PARSE(stateObject, STATE_LOOP, JParse::Boolean, false);
-        int posX = TRY_PARSE(stateObject, STATE_POS_X, JParse::Integer, 0);
-        int posY = TRY_PARSE(stateObject, STATE_POS_Y, JParse::Integer, 0);
-
-        // Apply data to node
-        Node* stateNode = CreateNode();
-        stateNode->SetNodeName(StringConvert::ToWStr(nodeName));
-        stateNode->SetAnimationName(StringConvert::ToWStr(animName));
-        stateNode->SetLoop(loop);
-        stateNode->SetPosition({ posX, posY });
+        Node* stateNode = CreateNode(stateObject);
     }
 
     // Load transitions (Loop through states, use int iterator to index m_nodes array)
@@ -1070,7 +1031,7 @@ void GraphmationForgeApp::RegisterWindowClasses()
     RegisterWindowClass(m_stringResources[ID_CLASS_PROPERTIES_PANEL], m_brushes[ID_COLOR_NODE_HIGHLIGHTED]);
 }
 
-Node* const GraphmationForgeApp::CreateNode()
+Node* const GraphmationForgeApp::CreateNode(NodeType::Enum const nodeType)
 {
     HWND nodeWindowHandle = 
         CreateWindow(m_stringResources[ID_CLASS_NODE],
@@ -1081,6 +1042,18 @@ Node* const GraphmationForgeApp::CreateNode()
                      (HMENU)ID_CLASS_NODE, NULL, NULL);
     HRGN region = CreateRoundRectRgn(0, 0, NODE_MIN_WIDTH, NODE_HEIGHT, 20, 20);
     SetWindowRgn(nodeWindowHandle, region, true);
+
+    Node* node = nullptr;
+    switch (nodeType)
+    {
+    default:
+    case NodeType::NORMAL:
+        node = new NodeDefault(m_mainWindowHandle, nodeWindowHandle);
+        break;
+    case NodeType::SELECTOR:
+        node = new NodeDefault(m_mainWindowHandle, nodeWindowHandle);
+        break;
+    }
 
     Node* node = new Node(m_mainWindowHandle, nodeWindowHandle);
     m_nodes.push_back(node);
@@ -1095,9 +1068,46 @@ Node* const GraphmationForgeApp::CreateNode()
     return node;
 }
 
-Node* const GraphmationForgeApp::CreateNodeAtMousePos()
+Node * const GraphmationForgeApp::CreateNode(JParse::Object const * const nodeData)
 {
-    Node* node = CreateNode();
+    std::string nodeTypeStr = TRY_PARSE(nodeData, STATE_TYPE, JParse::String, "NORMAL");
+    NodeType::Enum nodeType = NodeType::FromString(StringConvert::ToWStr(nodeTypeStr));
+
+    Node* node = CreateNode(nodeType);
+    
+    // Load node data
+    std::string nodeName = TRY_PARSE(nodeData, STATE_NAME, JParse::String, "New State");
+    bool loop = TRY_PARSE(nodeData, STATE_LOOP, JParse::Boolean, false);
+    int posX = TRY_PARSE(nodeData, STATE_POS_X, JParse::Integer, 0);
+    int posY = TRY_PARSE(nodeData, STATE_POS_Y, JParse::Integer, 0);
+
+    node->SetNodeName(StringConvert::ToWStr(nodeName));
+    node->SetLoop(loop);
+    node->SetPosition({ posX, posY });
+    
+
+    switch (nodeType)
+    {
+    default:
+    case NodeType::NORMAL:
+    {
+        std::string animName = TRY_PARSE(nodeData, STATE_ANIM_NAME, JParse::String, "NULL");
+        static_cast<NodeDefault*>(node)->SetAnimationName(StringConvert::ToWStr(animName));
+    }
+    break;
+    case NodeType::SELECTOR:
+    {
+        // TODO: GET THE ARRAY OF ANIMATION NAMES
+    }
+    break;
+    }
+    
+    return node;
+}
+
+Node* const GraphmationForgeApp::CreateNodeAtMousePos(NodeType::Enum const nodeType)
+{
+    Node* node = CreateNode(nodeType);
     POINT mousePos;
     GetCursorPos(&mousePos);
     ScreenToClient(m_mainWindowHandle, &mousePos);
