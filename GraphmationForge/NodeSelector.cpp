@@ -6,7 +6,7 @@ void NodeSelector::InitProperties()
 {
     Node::InitProperties();
     m_type = NodeType::SELECTOR;
-    m_properties.RegisterProperty(std::make_shared<StringProperty>(L"NULL"), PropertyID_VariableName, L"Var");
+    m_properties.RegisterProperty(std::make_shared<StringProperty>(L"VariableName"), PropertyID_VariableName, L"Var");
     m_properties.RegisterProperty(std::make_shared<VectorProperty<std::shared_ptr<StringProperty>>>(), PropertyID_AssociatedAnimations, L"Anim");
 }
 
