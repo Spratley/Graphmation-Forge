@@ -15,6 +15,9 @@ public:
     std::vector<std::shared_ptr<StringProperty>>& GetAnimations();
     std::vector<std::shared_ptr<StringProperty>> const& GetAnimations() const;
 
+    void SetVariableName(std::wstring const& variableName);
+    std::wstring const& GetVariableName() const;
+
     void InitProperties() override;
 private:
     enum

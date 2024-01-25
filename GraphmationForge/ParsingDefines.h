@@ -5,6 +5,7 @@
 #define STATE_NAME "name"
 #define STATE_ANIM_NAME "animationName"
 #define STATE_SELECTOR_ANIMS "animations"
+#define STATE_SELECTOR_VARIABLE_NAME "variableName"
 #define STATE_LOOP "loop"
 #define STATE_POS_X "positionX"
 #define STATE_POS_Y "positionY"

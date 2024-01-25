@@ -901,6 +901,8 @@ bool GraphmationForgeApp::SaveJSON(std::string const& path)
                 ADD_DATA(animationsArray, JParse::String, StringConvert::ToStr(str->m_value));
             }
             stateObject->Set(STATE_SELECTOR_ANIMS, animationsArray);
+
+            SET_DATA(stateObject, STATE_SELECTOR_VARIABLE_NAME, JParse::String, StringConvert::ToStr(selectorNode->GetVariableName()));
         }
         break;
         }
@@ -1149,6 +1151,9 @@ Node * const GraphmationForgeApp::CreateNode(JParse::Object const * const nodeDa
             std::shared_ptr<StringProperty> strProperty = std::make_shared<StringProperty>(StringConvert::ToWStr(animName->m_value));
             nodeAnims.push_back(strProperty);
         }
+
+        std::string variableName = TRY_PARSE(nodeData, STATE_SELECTOR_VARIABLE_NAME, JParse::String, "VariableName");
+        selectorNode->SetVariableName(StringConvert::ToWStr(variableName));
     }
     break;
     }
