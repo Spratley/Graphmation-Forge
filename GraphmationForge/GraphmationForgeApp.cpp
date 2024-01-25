@@ -875,6 +875,7 @@ bool GraphmationForgeApp::SaveJSON(std::string const& path)
         statesArray->Add(stateObject);
 
         SET_DATA(stateObject, STATE_NAME, JParse::String, StringConvert::ToStr(state->GetNodeName()));
+        SET_DATA(stateObject, STATE_TYPE, JParse::String, StringConvert::ToStr(NodeType::ToString(state->GetNodeType())))
         SET_DATA(stateObject, STATE_LOOP, JParse::Boolean, state->GetLoop());
         SET_DATA(stateObject, STATE_POS_X, JParse::Integer, state->GetNodePosition().x);
         SET_DATA(stateObject, STATE_POS_Y, JParse::Integer, state->GetNodePosition().y);
